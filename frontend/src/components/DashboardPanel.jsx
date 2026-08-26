@@ -20,12 +20,31 @@ const PIE_COLORS = {
   low: '#eab308',
 };
 
-// Custom Tooltip for dark mode charts
-const CustomBarTooltip = ({ active, payload, label }) => {
+// Custom Tooltip for charts supporting theme
+const CustomBarTooltip = ({ active, payload, label, theme }) => {
   if (active && payload && payload.length) {
+    const isLight = theme === 'light';
     return (
-      <div className="chart-tooltip">
-        <p className="chart-tooltip-title">{label}</p>
+      <div
+        className="chart-tooltip"
+        style={{
+          background: isLight ? '#ffffff' : '#1e293b',
+          borderColor: isLight ? '#e2e8f0' : '#475569',
+          color: isLight ? '#0f172a' : '#ffffff',
+          boxShadow: isLight
+            ? '0 10px 25px rgba(0, 0, 0, 0.1)'
+            : '0 8px 20px rgba(0, 0, 0, 0.4)',
+        }}
+      >
+        <p
+          className="chart-tooltip-title"
+          style={{
+            color: isLight ? '#0f172a' : '#ffffff',
+            borderColor: isLight ? '#e2e8f0' : '#334155',
+          }}
+        >
+          {label}
+        </p>
         {payload.map((entry, index) => (
           <p key={index} style={{ color: entry.color, margin: '3px 0', fontSize: '12px' }}>
             <strong>{entry.name}: </strong>
@@ -41,7 +60,12 @@ const CustomBarTooltip = ({ active, payload, label }) => {
 export default function DashboardPanel({
   geoData,
   relocationPlan = [],
+  theme = 'dark',
 }) {
+  const isLight = theme === 'light';
+  const gridColor = isLight ? '#e2e8f0' : '#334155';
+  const axisTextColor = isLight ? '#64748b' : '#94a3b8';
+
   // 1. Calculate Required Core KPI Metrics
   const metrics = useMemo(() => {
     let highRiskPopulation = 0;
@@ -238,10 +262,10 @@ export default function DashboardPanel({
                 data={routeChartData}
                 margin={{ top: 10, right: 20, left: 0, bottom: 20 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
-                <Tooltip content={<CustomBarTooltip />} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                <XAxis dataKey="name" stroke={axisTextColor} fontSize={12} />
+                <YAxis stroke={axisTextColor} fontSize={12} />
+                <Tooltip content={<CustomBarTooltip theme={theme} />} />
                 <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
                 <Bar dataKey="people" name="Evacuees Assigned" fill="#3b82f6" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -273,7 +297,7 @@ export default function DashboardPanel({
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip content={<CustomBarTooltip />} />
+                <Tooltip content={<CustomBarTooltip theme={theme} />} />
                 <Legend wrapperStyle={{ fontSize: '12px' }} />
               </PieChart>
             </ResponsiveContainer>
@@ -292,13 +316,18 @@ export default function DashboardPanel({
                 data={safeZoneUtilizationData}
                 margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                <YAxis stroke="#94a3b8" fontSize={12} />
-                <Tooltip content={<CustomBarTooltip />} />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                <XAxis dataKey="name" stroke={axisTextColor} fontSize={12} />
+                <YAxis stroke={axisTextColor} fontSize={12} />
+                <Tooltip content={<CustomBarTooltip theme={theme} />} />
                 <Legend wrapperStyle={{ fontSize: '12px' }} />
                 <Bar dataKey="Allocated People" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="Remaining Capacity" stackId="a" fill="#334155" radius={[6, 6, 0, 0]} />
+                <Bar
+                  dataKey="Remaining Capacity"
+                  stackId="a"
+                  fill={isLight ? '#cbd5e1' : '#334155'}
+                  radius={[6, 6, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -306,7 +335,7 @@ export default function DashboardPanel({
       </div>
 
       {/* Relocation Plan Table */}
-      <RelocationTable relocationPlan={relocationPlan} />
+      <RelocationTable relocationPlan={relocationPlan} theme={theme} />
     </div>
   );
 }

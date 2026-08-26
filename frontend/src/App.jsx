@@ -15,6 +15,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'map' | 'split'
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedZone, setSelectedZone] = useState(null);
+  const [theme, setTheme] = useState('dark'); // 'dark' | 'light'
 
   // Fetch both /zones and /relocation-plan from FastAPI backend
   const fetchAllData = async () => {
@@ -110,7 +111,7 @@ function App() {
   }, [geoData]);
 
   return (
-    <div className="safeshift-app">
+    <div className={`safeshift-app ${theme === 'light' ? 'light-theme' : 'dark-theme'}`}>
       {/* Top Navbar */}
       <header className="app-navbar">
         <div className="nav-brand">
@@ -151,12 +152,26 @@ function App() {
           </button>
         </div>
 
-        {/* Status & Sync */}
+        {/* Theme Toggle & Status */}
         <div className="nav-status">
+          <button
+            type="button"
+            className="theme-toggle-btn"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={
+              theme === 'dark'
+                ? 'Switch to Light Mode (Map becomes dark)'
+                : 'Switch to Dark Mode'
+            }
+          >
+            {theme === 'dark' ? '☀️ Light UI' : '🌙 Dark UI'}
+          </button>
+
           <div className={`status-indicator ${error ? 'offline' : 'online'}`}>
             <span className="status-dot" />
             <span>{error ? 'API Offline' : 'FastAPI Connected'}</span>
           </div>
+
           <button
             type="button"
             className="refresh-btn"
@@ -193,7 +208,11 @@ function App() {
         {/* 1. Dashboard Only View */}
         {activeTab === 'dashboard' && (
           <div className="dashboard-scrollable-view">
-            <DashboardPanel geoData={geoData} relocationPlan={relocationPlan} />
+            <DashboardPanel
+              geoData={geoData}
+              relocationPlan={relocationPlan}
+              theme={theme}
+            />
           </div>
         )}
 
@@ -204,6 +223,7 @@ function App() {
               stats={stats}
               selectedFilter={selectedFilter}
               onSelectFilter={setSelectedFilter}
+              theme={theme}
             />
             <div className="map-view-container">
               <HazardMap
@@ -211,11 +231,13 @@ function App() {
                 stats={stats}
                 selectedFilter={selectedFilter}
                 onSelectZone={(zone) => setSelectedZone(zone)}
+                theme={theme}
               />
               {selectedZone && (
                 <ZoneDetailsModal
                   zone={selectedZone}
                   onClose={() => setSelectedZone(null)}
+                  theme={theme}
                 />
               )}
             </div>
@@ -230,6 +252,7 @@ function App() {
                 stats={stats}
                 selectedFilter={selectedFilter}
                 onSelectFilter={setSelectedFilter}
+                theme={theme}
               />
               <div className="map-view-container">
                 <HazardMap
@@ -237,18 +260,24 @@ function App() {
                   stats={stats}
                   selectedFilter={selectedFilter}
                   onSelectZone={(zone) => setSelectedZone(zone)}
+                  theme={theme}
                 />
                 {selectedZone && (
                   <ZoneDetailsModal
                     zone={selectedZone}
                     onClose={() => setSelectedZone(null)}
+                    theme={theme}
                   />
                 )}
               </div>
             </div>
 
             <div className="split-right-pane">
-              <DashboardPanel geoData={geoData} relocationPlan={relocationPlan} />
+              <DashboardPanel
+                geoData={geoData}
+                relocationPlan={relocationPlan}
+                theme={theme}
+              />
             </div>
           </div>
         )}

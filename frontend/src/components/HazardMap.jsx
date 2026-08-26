@@ -38,6 +38,7 @@ export default function HazardMap({
   stats,
   selectedFilter = 'all',
   onSelectZone,
+  theme = 'dark',
 }) {
   const geoJsonRef = useRef(null);
 
@@ -115,7 +116,6 @@ export default function HazardMap({
         scrollWheelZoom={true}
         className="leaflet-map-container"
       >
-        {/* CartoDB Voyager Tile Layer for clean, modern GIS presentation */}
         <TileLayer
           attribution='&copy; OpenStreetMap contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -123,7 +123,7 @@ export default function HazardMap({
 
         {filteredData && (
           <GeoJSON
-            key={`${selectedFilter}-${filteredData.features.length}`}
+            key={`${selectedFilter}-${filteredData.features.length}-${theme}`}
             ref={geoJsonRef}
             data={filteredData}
             style={getZoneStyle}
@@ -135,7 +135,7 @@ export default function HazardMap({
       </MapContainer>
 
       {/* Floating Legend Component */}
-      <Legend stats={stats} />
+      <Legend stats={stats} theme={theme} />
     </div>
   );
 }
