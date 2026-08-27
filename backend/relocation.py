@@ -83,7 +83,6 @@ def generate_relocation_plan(geo_data: Dict[str, Any]) -> List[Dict[str, Any]]:
         # Sort safe zones by proximity from this hazard zone's centroid
         safe_zones_by_distance = []
         for sz in safe_zones:
-            # Fast straight-line sorting metric
             crow_dist = haversine_distance_km(
                 hz["centroid_lon"], hz["centroid_lat"],
                 sz["centroid_lon"], sz["centroid_lat"]
@@ -113,7 +112,7 @@ def generate_relocation_plan(geo_data: Dict[str, Any]) -> List[Dict[str, Any]]:
             sz["remaining_capacity"] -= allocated
             people_to_relocate -= allocated
 
-            # Step 5: Updated relocation output schema with road distance and travel time
+            # Step 5: Updated relocation output schema with coordinates, road distance and travel time
             relocation_item = {
                 "from": hz["area_name"],
                 "to": sz["area_name"],
@@ -122,7 +121,9 @@ def generate_relocation_plan(geo_data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "distance_km": route_dist_km,
                 "travel_time_min": travel_time_min,
                 "hazard_type": hz["hazard_type"],
-                "risk": hz["risk"]
+                "risk": hz["risk"],
+                "origin_coords": [round(hz["centroid_lat"], 5), round(hz["centroid_lon"], 5)],
+                "dest_coords": [round(sz["centroid_lat"], 5), round(sz["centroid_lon"], 5)],
             }
             relocations.append(relocation_item)
 
@@ -137,6 +138,8 @@ def generate_relocation_plan(geo_data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 "travel_time_min": None,
                 "hazard_type": hz["hazard_type"],
                 "risk": hz["risk"],
+                "origin_coords": [round(hz["centroid_lat"], 5), round(hz["centroid_lon"], 5)],
+                "dest_coords": None,
                 "status": "OVERFLOW_ALERT"
             })
 

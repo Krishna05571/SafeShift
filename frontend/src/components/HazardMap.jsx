@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
+import React, { useEffect, useRef, useState } from 'react';
+import { MapContainer, TileLayer, GeoJSON, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getZoneStyle, getHighlightStyle, createPopupContent } from '../utils/styles';
@@ -35,12 +35,15 @@ function MapBoundsController({ data }) {
 
 export default function HazardMap({
   geoData,
+  relocationPlan = [],
   stats,
   selectedFilter = 'all',
   onSelectZone,
   theme = 'dark',
+  simTimeStep = 0,
 }) {
   const geoJsonRef = useRef(null);
+  const [showRoutes, setShowRoutes] = useState(true);
 
   // Filter features based on active user filter
   const filteredData = React.useMemo(() => {
@@ -64,6 +67,21 @@ export default function HazardMap({
     };
   }, [geoData, selectedFilter]);
 
+  // Filter relocation routes based on the active risk filter
+  const filteredRoutes = React.useMemo(() => {
+    if (!relocationPlan || relocationPlan.length === 0) return [];
+    if (selectedFilter === 'all' || selectedFilter === 'safe') return relocationPlan;
+
+    return relocationPlan.filter((r) => {
+      if (selectedFilter === 'high') return r.risk === 'high';
+      if (selectedFilter === 'medium') return r.risk === 'medium';
+      if (selectedFilter === 'low') return r.risk === 'low';
+      if (selectedFilter === 'landslide') return r.hazard_type === 'landslide';
+      if (selectedFilter === 'flood') return r.hazard_type === 'flood';
+      return true;
+    });
+  }, [relocationPlan, selectedFilter]);
+
   // Handle polygon hover, mouseout, and click behaviors
   const onEachFeature = (feature, layer) => {
     const props = feature.properties || {};
@@ -78,7 +96,7 @@ export default function HazardMap({
     // Tooltip for instant hover feedback
     const tooltipText = props.safe
       ? `🛡️ ${props.area_name} (Cap: ${props.capacity?.toLocaleString() || 'N/A'})`
-      : `⚠️ ${props.area_name} (${(props.risk || '').toUpperCase()} RISK)`;
+      : `⚠️ ${props.area_name} (${(props.risk || '').toUpperCase()} RISK | Pop: ${(props.population || 0).toLocaleString()})`;
     layer.bindTooltip(tooltipText, {
       sticky: true,
       direction: 'top',
@@ -116,14 +134,16 @@ export default function HazardMap({
         scrollWheelZoom={true}
         className="leaflet-map-container"
       >
+        {/* Strictly preserved standard OpenStreetMap TileLayer without watermarks */}
         <TileLayer
           attribution='&copy; OpenStreetMap contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        {/* Hazard & Safe Polygons */}
         {filteredData && (
           <GeoJSON
-            key={`${selectedFilter}-${filteredData.features.length}-${theme}`}
+            key={`${selectedFilter}-${filteredData.features.length}-${theme}-t${simTimeStep}`}
             ref={geoJsonRef}
             data={filteredData}
             style={getZoneStyle}
@@ -131,8 +151,92 @@ export default function HazardMap({
           />
         )}
 
+        {/* Evacuation Route Polylines: Hazard Zone -> Safe Zone */}
+        {showRoutes &&
+          filteredRoutes.map((route, idx) => {
+            if (!route.origin_coords || !route.dest_coords) return null;
+
+            const risk = (route.risk || 'medium').toLowerCase();
+            const isHigh = risk === 'high';
+            const isLow = risk === 'low';
+
+            // Route color by priority: Red = High, Yellow = Medium, Green = Low
+            const routeColor = isHigh ? '#ef4444' : isLow ? '#10b981' : '#eab308';
+
+            return (
+              <Polyline
+                key={`route-${idx}-${route.from}-${route.to}-t${simTimeStep}`}
+                positions={[route.origin_coords, route.dest_coords]}
+                pathOptions={{
+                  color: routeColor,
+                  weight: isHigh ? 3.5 : 2.5,
+                  opacity: 0.85,
+                  dashArray: isHigh ? '6, 8' : '5, 6',
+                  lineCap: 'round',
+                  lineJoin: 'round',
+                }}
+              >
+                <Tooltip sticky direction="top" className="safeshift-route-tooltip">
+                  <div className="route-tooltip-container">
+                    <div className="route-tooltip-header">
+                      <span className="route-tooltip-tag">🛣️ Evacuation Corridor</span>
+                      <span
+                        className={`route-risk-pill ${
+                          isHigh ? 'pill-high' : isLow ? 'pill-low' : 'pill-medium'
+                        }`}
+                      >
+                        {risk.toUpperCase()}
+                      </span>
+                    </div>
+
+                    <div className="route-tooltip-path">
+                      <span className="origin-text">{route.from}</span>
+                      <span className="route-arrow">➔</span>
+                      <span className="dest-text">{route.to}</span>
+                    </div>
+
+                    <div className="route-tooltip-grid">
+                      <div className="route-stat-item">
+                        <span className="stat-label">Evacuees:</span>
+                        <strong className="stat-val text-people">
+                          👥 {(route.people || 0).toLocaleString()}
+                        </strong>
+                      </div>
+
+                      <div className="route-stat-item">
+                        <span className="stat-label">Travel Time:</span>
+                        <strong className="stat-val text-time">
+                          ⏱️ {route.travel_time_min ? `${route.travel_time_min} min` : 'N/A'}
+                        </strong>
+                      </div>
+
+                      <div className="route-stat-item">
+                        <span className="stat-label">Road Distance:</span>
+                        <strong className="stat-val text-dist">
+                          📍 {route.distance_km ? `${route.distance_km} km` : 'N/A'}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+                </Tooltip>
+              </Polyline>
+            );
+          })}
+
         {filteredData && <MapBoundsController data={filteredData} />}
       </MapContainer>
+
+      {/* Floating Map Route Toggle Control */}
+      <div className="map-floating-toggles">
+        <button
+          type="button"
+          className={`map-toggle-btn ${showRoutes ? 'active' : ''}`}
+          onClick={() => setShowRoutes(!showRoutes)}
+          title="Toggle Evacuation Corridors on/off"
+        >
+          {showRoutes ? '🛣️ Corridors Visible' : '🛣️ Corridors Hidden'}
+        </button>
+      </div>
 
       {/* Floating Legend Component */}
       <Legend stats={stats} theme={theme} />

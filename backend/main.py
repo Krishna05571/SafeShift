@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Body
+from fastapi import FastAPI, Body, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -13,14 +13,16 @@ load_dotenv(dotenv_path=ENV_PATH)
 try:
     from relocation import generate_relocation_plan
     from gemini_explainer import explain_relocation_plan
+    from simulation import simulate_disaster_state
 except ImportError:
     from .relocation import generate_relocation_plan
     from .gemini_explainer import explain_relocation_plan
+    from .simulation import simulate_disaster_state
 
 app = FastAPI(
     title="SafeShift Disaster Intelligence API",
-    description="Multi-Hazard Spatial Relocation Engine & AI Decision Explainer",
-    version="2.0.0"
+    description="Multi-Hazard Spatial Relocation Engine, Road Routing, AI Explainer & Disaster Simulator",
+    version="2.1.0"
 )
 
 # Enable CORS for React Frontend
@@ -44,14 +46,19 @@ with open(DATA_PATH, "r", encoding="utf-8") as f:
 class ExplainRequest(BaseModel):
     relocation_plan: Optional[List[Dict[str, Any]]] = None
 
+class SimulationRequest(BaseModel):
+    time_step: int = 0
+
 @app.get("/")
 def home():
     return {
         "message": "SafeShift Disaster Intelligence API running",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "endpoints": [
             "GET /zones",
             "GET /relocation-plan",
+            "GET /simulate-disaster?t=0",
+            "POST /simulate-disaster",
             "POST /ai-explain",
             "GET /ai-explain"
         ]
@@ -72,6 +79,25 @@ def get_relocation_plan():
     - Allocates people and splits across safe zones if capacity is exceeded
     """
     return generate_relocation_plan(geo_data)
+
+@app.get("/simulate-disaster")
+def get_simulate_disaster(t: int = Query(default=0, description="Simulation time step: 0=normal, 1=medium expands, 2=high spreads, 3=peak outbreak")):
+    """
+    Simulates disaster progression across India at time step t:
+    t=0 -> Normal baseline
+    t=1 -> Medium risk expands (+35% displacement)
+    t=2 -> High risk spreads (+65% surge, immediate priority)
+    t=3 -> Peak emergency outbreak
+    """
+    return simulate_disaster_state(geo_data, time_step=t)
+
+@app.post("/simulate-disaster")
+def post_simulate_disaster(body: Optional[SimulationRequest] = Body(default=None)):
+    """
+    POST endpoint to simulate dynamic disaster escalation and recompute the relocation plan.
+    """
+    t = body.time_step if body else 0
+    return simulate_disaster_state(geo_data, time_step=t)
 
 @app.post("/ai-explain")
 def post_ai_explain(body: Optional[ExplainRequest] = Body(default=None)):

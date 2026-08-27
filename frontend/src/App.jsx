@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import HazardMap from './components/HazardMap';
 import StatsBar from './components/StatsBar';
 import ZoneDetailsModal from './components/ZoneDetailsModal';
 import DashboardPanel from './components/DashboardPanel';
+import SimulationController from './components/SimulationController';
 import './App.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
@@ -16,6 +17,12 @@ function App() {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedZone, setSelectedZone] = useState(null);
   const [theme, setTheme] = useState('dark'); // 'dark' | 'light'
+
+  // Disaster Simulation State
+  const [simTimeStep, setSimTimeStep] = useState(0);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simMetrics, setSimMetrics] = useState(null);
+  const simIntervalRef = useRef(null);
 
   // Fetch both /zones and /relocation-plan from FastAPI backend
   const fetchAllData = async () => {
@@ -52,6 +59,64 @@ function App() {
   useEffect(() => {
     fetchAllData();
   }, []);
+
+  // Fetch simulated disaster state for a specific time step t
+  const handleSimulateStep = useCallback(async (step) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/simulate-disaster?t=${step}`);
+      if (!res.ok) {
+        throw new Error(`Simulation request failed: ${res.status}`);
+      }
+      const data = await res.json();
+      setSimTimeStep(data.time_step);
+      setGeoData(data.geo_data);
+      setRelocationPlan(data.relocation_plan);
+      setSimMetrics(data.metrics);
+    } catch (err) {
+      console.error('Error executing disaster simulation:', err);
+    }
+  }, []);
+
+  // Handle Play, Pause, Reset simulation controls
+  const handleStartSimulation = () => {
+    setIsSimulating(true);
+  };
+
+  const handlePauseSimulation = () => {
+    setIsSimulating(false);
+    if (simIntervalRef.current) {
+      clearInterval(simIntervalRef.current);
+    }
+  };
+
+  const handleResetSimulation = () => {
+    handlePauseSimulation();
+    setSimTimeStep(0);
+    handleSimulateStep(0);
+  };
+
+  // Automated step progression when simulation is playing
+  useEffect(() => {
+    if (isSimulating) {
+      simIntervalRef.current = setInterval(() => {
+        setSimTimeStep((prevStep) => {
+          const nextStep = prevStep < 3 ? prevStep + 1 : 0;
+          handleSimulateStep(nextStep);
+          return nextStep;
+        });
+      }, 3500);
+    } else {
+      if (simIntervalRef.current) {
+        clearInterval(simIntervalRef.current);
+      }
+    }
+
+    return () => {
+      if (simIntervalRef.current) {
+        clearInterval(simIntervalRef.current);
+      }
+    };
+  }, [isSimulating, handleSimulateStep]);
 
   // Compute live dataset analytics for quick stats and map legend
   const stats = useMemo(() => {
@@ -227,10 +292,12 @@ function App() {
             <div className="map-view-container">
               <HazardMap
                 geoData={geoData}
+                relocationPlan={relocationPlan}
                 stats={stats}
                 selectedFilter={selectedFilter}
                 onSelectZone={(zone) => setSelectedZone(zone)}
                 theme={theme}
+                simTimeStep={simTimeStep}
               />
               {selectedZone && (
                 <ZoneDetailsModal
@@ -256,10 +323,12 @@ function App() {
               <div className="map-view-container">
                 <HazardMap
                   geoData={geoData}
+                  relocationPlan={relocationPlan}
                   stats={stats}
                   selectedFilter={selectedFilter}
                   onSelectZone={(zone) => setSelectedZone(zone)}
                   theme={theme}
+                  simTimeStep={simTimeStep}
                 />
                 {selectedZone && (
                   <ZoneDetailsModal
@@ -281,6 +350,20 @@ function App() {
           </div>
         )}
       </main>
+
+      {/* Floating Bottom Disaster Simulation Dock */}
+      <SimulationController
+        timeStep={simTimeStep}
+        isSimulating={isSimulating}
+        onStartSimulation={handleStartSimulation}
+        onPauseSimulation={handlePauseSimulation}
+        onResetSimulation={handleResetSimulation}
+        onSelectStep={(step) => {
+          setIsSimulating(false);
+          handleSimulateStep(step);
+        }}
+        simMetrics={simMetrics}
+      />
     </div>
   );
 }
