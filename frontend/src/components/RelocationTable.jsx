@@ -22,7 +22,7 @@ export default function RelocationTable({ relocationPlan = [] }) {
         <div>
           <h3 className="table-title">📋 Live Relocation & Evacuation Dispatch Plan</h3>
           <p className="table-subtitle">
-            Optimal algorithmic matching based on hazard priority, shortest centroid distance, and shelter capacity
+            Optimal algorithmic matching based on hazard priority, real-world road routing, and shelter capacity
           </p>
         </div>
 
@@ -57,14 +57,15 @@ export default function RelocationTable({ relocationPlan = [] }) {
               <th>Priority Score</th>
               <th>Matched Safe Shelter (To)</th>
               <th>People Relocated</th>
-              <th>Distance</th>
+              <th>Road Distance</th>
+              <th>Est. Travel Time</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody>
             {filteredPlan.length === 0 ? (
               <tr>
-                <td colSpan="8" className="table-empty">
+                <td colSpan="9" className="table-empty">
                   No relocation records found.
                 </td>
               </tr>
@@ -117,6 +118,11 @@ export default function RelocationTable({ relocationPlan = [] }) {
                       </span>
                     </td>
                     <td>
+                      <span className="time-badge font-mono">
+                        {item.travel_time_min ? `⏱️ ${item.travel_time_min} min` : 'N/A'}
+                      </span>
+                    </td>
+                    <td>
                       <span className="status-badge-optimal">
                         ✓ Optimal Match
                       </span>
@@ -131,7 +137,7 @@ export default function RelocationTable({ relocationPlan = [] }) {
 
       <div className="table-footer">
         <span>Showing {filteredPlan.length} of {relocationPlan.length} evacuation routes</span>
-        <span className="algorithm-note">⚡ Computed via Centroid Distance Optimization + Capacity Triage</span>
+        <span className="algorithm-note">⚡ Real-world road routing distance & travel time estimation</span>
       </div>
     </div>
   );
