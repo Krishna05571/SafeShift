@@ -1,301 +1,1996 @@
 {
-    "type": "FeatureCollection",
-    "features": [
-        {
-            "type": "Feature",
-            "properties": {
-                "risk": "high",
-                "hazard_type": "landslide",
-                "population": 8000,
-                "area_name": "Uttrakhand Zone",
-                "priority": "immediate"
-            },
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [
-                    [
-                        [
-                            80.1719458,
-                            29.1443168
-                        ],
-                        [
-                            78.865871,
-                            29.45949
-                        ],
-                        [
-                            79.0679905,
-                            30.6867059
-                        ],
-                        [
-                            80.0038501,
-                            30.3662652
-                        ],
-                        [
-                            80.407623,
-                            29.7927233
-                        ],
-                        [
-                            80.1719458,
-                            29.1443168
-                        ]
-                    ]
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "risk": "medium",
-                "population": 5000,
-                "hazard_type": "flood",
-                "area_name": "Mumbai Zone",
-                "priority": "short-term"
-            },
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [
-                    [
-                        [
-                            72.8821321,
-                            18.6250486
-                        ],
-                        [
-                            72.9092596,
-                            18.4193335
-                        ],
-                        [
-                            73.0246283,
-                            18.1693033
-                        ],
-                        [
-                            73.2011989,
-                            18.2813235
-                        ],
-                        [
-                            72.9904442,
-                            18.7596051
-                        ],
-                        [
-                            72.8762671,
-                            18.6341088
-                        ],
-                        [
-                            72.8821321,
-                            18.6250486
-                        ]
-                    ]
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "risk": "low",
-                "hazard_type": "landslide",
-                "population": 2000,
-                "area_name": "Delhi Zone",
-                "priority": "safe"
-            },
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [
-                    [
-                        [
-                            77.0255985,
-                            28.8361314
-                        ],
-                        [
-                            76.9243628,
-                            28.6594947
-                        ],
-                        [
-                            76.9413759,
-                            28.4604349
-                        ],
-                        [
-                            77.3179148,
-                            28.4648332
-                        ],
-                        [
-                            77.2719987,
-                            28.7324221
-                        ],
-                        [
-                            77.0255985,
-                            28.8361314
-                        ]
-                    ]
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "safe": true,
-                "capacity": 10000,
-                "area_name": "Safe Zone A",
-                "location_type":"relocation_site"
-            },
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [
-                    [
-                        [
-                            78.7334939,
-                            29.2886252
-                        ],
-                        [
-                            78.5484366,
-                            29.0588488
-                        ],
-                        [
-                            78.9977442,
-                            28.5075564
-                        ],
-                        [
-                            79.6838834,
-                            28.7889959
-                        ],
-                        [
-                            79.2952158,
-                            29.2068245
-                        ],
-                        [
-                            78.7334939,
-                            29.2886252
-                        ]
-                    ]
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "safe": true,
-                "capacity": 7500,
-                "area_name": "Safe Zone B",
-                "location_type":"relocation_site"
-            },
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [
-                    [
-                        [
-                            73.1755696,
-                            18.8532606
-                        ],
-                        [
-                            73.1126564,
-                            18.6820216
-                        ],
-                        [
-                            73.2418895,
-                            18.3172945
-                        ],
-                        [
-                            73.5295883,
-                            18.3121132
-                        ],
-                        [
-                            73.4521693,
-                            18.6929188
-                        ],
-                        [
-                            73.1755696,
-                            18.8532606
-                        ]
-                    ]
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "risk": "high",
-                "hazard_type": "flood",
-                "population": 6000,
-                "area_name": "Odisha Zone",
-                "priority": "immediate"
-            },
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [
-                    [
-                        [
-                            85.5115864,
-                            19.766539
-                        ],
-                        [
-                            86.462894,
-                            20.0793918
-                        ],
-                        [
-                            85.8923696,
-                            20.690564
-                        ],
-                        [
-                            84.7829696,
-                            20.357034
-                        ],
-                        [
-                            84.1331434,
-                            19.7586846
-                        ],
-                        [
-                            83.7741022,
-                            18.976778
-                        ],
-                        [
-                            84.6186075,
-                            18.9370371
-                        ],
-                        [
-                            85.5115864,
-                            19.766539
-                        ]
-                    ]
-                ]
-            }
-        },
-        {
-            "type": "Feature",
-            "properties": {
-                "safe": true,
-                "capacity": 6500,
-                "area_name": "Safe Zone C",
-                "location_type":"relocation_site"
-            },
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": [
-                    [
-                        [
-                            82.7862598,
-                            21.5756904
-                        ],
-                        [
-                            81.7637034,
-                            20.5188086
-                        ],
-                        [
-                            81.6456561,
-                            19.6733111
-                        ],
-                        [
-                            82.6500596,
-                            19.6042994
-                        ],
-                        [
-                            83.6966351,
-                            21.2519539
-                        ],
-                        [
-                            82.7862598,
-                            21.5756904
-                        ]
-                    ]
-                ]
-            }
-        }
-    ]
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "landslide",
+        "population": 12500,
+        "area_name": "Chamoli - Joshimath Zone (UK)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              79.34,
+              30.37
+            ],
+            [
+              79.78,
+              30.37
+            ],
+            [
+              79.802,
+              30.73
+            ],
+            [
+              79.362,
+              30.739
+            ],
+            [
+              79.307,
+              30.55
+            ],
+            [
+              79.34,
+              30.37
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "landslide",
+        "population": 9000,
+        "area_name": "Kedarnath - Rudraprayag Valley (UK)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              78.78,
+              30.32
+            ],
+            [
+              79.18,
+              30.32
+            ],
+            [
+              79.2,
+              30.64
+            ],
+            [
+              78.8,
+              30.648
+            ],
+            [
+              78.75,
+              30.48
+            ],
+            [
+              78.78,
+              30.32
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "landslide",
+        "population": 8000,
+        "area_name": "Nainital Kumaon Hills (UK)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              79.27,
+              29.23
+            ],
+            [
+              79.63,
+              29.23
+            ],
+            [
+              79.648,
+              29.53
+            ],
+            [
+              79.288,
+              29.5375
+            ],
+            [
+              79.243,
+              29.38
+            ],
+            [
+              79.27,
+              29.23
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "flood",
+        "population": 11000,
+        "area_name": "Kullu - Manali Beas Basin (HP)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.96,
+              31.75
+            ],
+            [
+              77.4,
+              31.75
+            ],
+            [
+              77.422,
+              32.15
+            ],
+            [
+              76.982,
+              32.16
+            ],
+            [
+              76.927,
+              31.95
+            ],
+            [
+              76.96,
+              31.75
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "landslide",
+        "population": 7500,
+        "area_name": "Shimla Urban Slopes (HP)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.01,
+              30.96
+            ],
+            [
+              77.33,
+              30.96
+            ],
+            [
+              77.346,
+              31.24
+            ],
+            [
+              77.026,
+              31.247
+            ],
+            [
+              76.986,
+              31.1
+            ],
+            [
+              77.01,
+              30.96
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "flood",
+        "population": 15000,
+        "area_name": "Srinagar Jhelum Basin (J&K)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              74.55,
+              33.88
+            ],
+            [
+              75.05,
+              33.88
+            ],
+            [
+              75.075,
+              34.28
+            ],
+            [
+              74.575,
+              34.29
+            ],
+            [
+              74.5125,
+              34.08
+            ],
+            [
+              74.55,
+              33.88
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "flood",
+        "population": 5000,
+        "area_name": "Leh Indus Valley Belt (Ladakh)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.33,
+              33.97
+            ],
+            [
+              77.83,
+              33.97
+            ],
+            [
+              77.855,
+              34.33
+            ],
+            [
+              77.355,
+              34.339
+            ],
+            [
+              77.2925,
+              34.15
+            ],
+            [
+              77.33,
+              33.97
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "flood",
+        "population": 18000,
+        "area_name": "Kaziranga - Golaghat Basin (Assam)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              93.0,
+              26.43
+            ],
+            [
+              93.7,
+              26.43
+            ],
+            [
+              93.735,
+              26.87
+            ],
+            [
+              93.035,
+              26.881
+            ],
+            [
+              92.9475,
+              26.65
+            ],
+            [
+              93.0,
+              26.43
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "flood",
+        "population": 14000,
+        "area_name": "Majuli Island - Dhemaji (Assam)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              93.9,
+              26.75
+            ],
+            [
+              94.5,
+              26.75
+            ],
+            [
+              94.53,
+              27.15
+            ],
+            [
+              93.93,
+              27.16
+            ],
+            [
+              93.855,
+              26.95
+            ],
+            [
+              93.9,
+              26.75
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "landslide",
+        "population": 8500,
+        "area_name": "Guwahati Urban Hills (Assam)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              91.57,
+              26.04
+            ],
+            [
+              91.93,
+              26.04
+            ],
+            [
+              91.948,
+              26.32
+            ],
+            [
+              91.588,
+              26.327
+            ],
+            [
+              91.543,
+              26.18
+            ],
+            [
+              91.57,
+              26.04
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "landslide",
+        "population": 8500,
+        "area_name": "Teesta River Valley (Sikkim)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              88.34,
+              27.17
+            ],
+            [
+              88.7,
+              27.17
+            ],
+            [
+              88.718,
+              27.49
+            ],
+            [
+              88.358,
+              27.498
+            ],
+            [
+              88.313,
+              27.33
+            ],
+            [
+              88.34,
+              27.17
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "landslide",
+        "population": 6000,
+        "area_name": "Cherrapunji - Khasi Hills (Meghalaya)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              91.52,
+              25.13
+            ],
+            [
+              91.92,
+              25.13
+            ],
+            [
+              91.94,
+              25.43
+            ],
+            [
+              91.54,
+              25.4375
+            ],
+            [
+              91.49,
+              25.28
+            ],
+            [
+              91.52,
+              25.13
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "landslide",
+        "population": 10000,
+        "area_name": "Darjeeling - Kalimpong Slopes (WB)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              88.08,
+              26.88
+            ],
+            [
+              88.44,
+              26.88
+            ],
+            [
+              88.458,
+              27.2
+            ],
+            [
+              88.098,
+              27.208
+            ],
+            [
+              88.053,
+              27.04
+            ],
+            [
+              88.08,
+              26.88
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "flood",
+        "population": 16000,
+        "area_name": "Sundarbans Coastal Delta (WB)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              88.5,
+              21.7
+            ],
+            [
+              89.2,
+              21.7
+            ],
+            [
+              89.235,
+              22.2
+            ],
+            [
+              88.535,
+              22.2125
+            ],
+            [
+              88.4475,
+              21.95
+            ],
+            [
+              88.5,
+              21.7
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "flood",
+        "population": 22000,
+        "area_name": "Kosi Inundation Belt - Supaul (Bihar)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              86.25,
+              25.87
+            ],
+            [
+              86.95,
+              25.87
+            ],
+            [
+              86.985,
+              26.37
+            ],
+            [
+              86.285,
+              26.3825
+            ],
+            [
+              86.1975,
+              26.12
+            ],
+            [
+              86.25,
+              25.87
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "flood",
+        "population": 13000,
+        "area_name": "Bagmati Basin - Muzaffarpur (Bihar)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              85.1,
+              25.92
+            ],
+            [
+              85.66,
+              25.92
+            ],
+            [
+              85.688,
+              26.32
+            ],
+            [
+              85.128,
+              26.33
+            ],
+            [
+              85.058,
+              26.12
+            ],
+            [
+              85.1,
+              25.92
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "flood",
+        "population": 15000,
+        "area_name": "Mahanadi Delta - Kendrapara (Odisha)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              86.12,
+              20.28
+            ],
+            [
+              86.72,
+              20.28
+            ],
+            [
+              86.75,
+              20.72
+            ],
+            [
+              86.15,
+              20.731
+            ],
+            [
+              86.075,
+              20.5
+            ],
+            [
+              86.12,
+              20.28
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "flood",
+        "population": 12000,
+        "area_name": "Puri - Chilika Coastal Surge (Odisha)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              85.2,
+              19.58
+            ],
+            [
+              85.8,
+              19.58
+            ],
+            [
+              85.83,
+              20.02
+            ],
+            [
+              85.23,
+              20.031
+            ],
+            [
+              85.155,
+              19.8
+            ],
+            [
+              85.2,
+              19.58
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "flood",
+        "population": 11000,
+        "area_name": "Godavari Delta - Konaseema (AP)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              81.62,
+              16.63
+            ],
+            [
+              82.18,
+              16.63
+            ],
+            [
+              82.208,
+              17.07
+            ],
+            [
+              81.648,
+              17.081
+            ],
+            [
+              81.578,
+              16.85
+            ],
+            [
+              81.62,
+              16.63
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "landslide",
+        "population": 9500,
+        "area_name": "Wayanad - Meppadi Hills (Kerala)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              75.95,
+              11.4
+            ],
+            [
+              76.31,
+              11.4
+            ],
+            [
+              76.328,
+              11.7
+            ],
+            [
+              75.968,
+              11.7075
+            ],
+            [
+              75.923,
+              11.55
+            ],
+            [
+              75.95,
+              11.4
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "landslide",
+        "population": 8000,
+        "area_name": "Idukki High Range (Kerala)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.78,
+              9.67
+            ],
+            [
+              77.18,
+              9.67
+            ],
+            [
+              77.2,
+              10.03
+            ],
+            [
+              76.8,
+              10.039
+            ],
+            [
+              76.75,
+              9.85
+            ],
+            [
+              76.78,
+              9.67
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "flood",
+        "population": 12000,
+        "area_name": "Kuttanad Lowlands (Kerala)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.23,
+              9.27
+            ],
+            [
+              76.67,
+              9.27
+            ],
+            [
+              76.692,
+              9.63
+            ],
+            [
+              76.252,
+              9.639
+            ],
+            [
+              76.197,
+              9.45
+            ],
+            [
+              76.23,
+              9.27
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "high",
+        "hazard_type": "landslide",
+        "population": 10500,
+        "area_name": "Mahad - Savitri River Basin (Maharashtra)",
+        "priority": "immediate"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.2,
+              17.9
+            ],
+            [
+              73.64,
+              17.9
+            ],
+            [
+              73.662,
+              18.26
+            ],
+            [
+              73.222,
+              18.269
+            ],
+            [
+              73.167,
+              18.08
+            ],
+            [
+              73.2,
+              17.9
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "flood",
+        "population": 16000,
+        "area_name": "Mumbai Mithi River Basin (Maharashtra)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.7,
+              18.91
+            ],
+            [
+              73.06,
+              18.91
+            ],
+            [
+              73.078,
+              19.21
+            ],
+            [
+              72.718,
+              19.2175
+            ],
+            [
+              72.673,
+              19.06
+            ],
+            [
+              72.7,
+              18.91
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "landslide",
+        "population": 6000,
+        "area_name": "Pune Western Ghats Slopes (Maharashtra)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.37,
+              18.37
+            ],
+            [
+              73.73,
+              18.37
+            ],
+            [
+              73.748,
+              18.67
+            ],
+            [
+              73.388,
+              18.6775
+            ],
+            [
+              73.343,
+              18.52
+            ],
+            [
+              73.37,
+              18.37
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "landslide",
+        "population": 7000,
+        "area_name": "Kodagu - Coorg Hills (Karnataka)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              75.54,
+              12.26
+            ],
+            [
+              75.94,
+              12.26
+            ],
+            [
+              75.96,
+              12.58
+            ],
+            [
+              75.56,
+              12.588
+            ],
+            [
+              75.51,
+              12.42
+            ],
+            [
+              75.54,
+              12.26
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "landslide",
+        "population": 6500,
+        "area_name": "Nilgiris - Ooty Slopes (Tamil Nadu)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.52,
+              11.26
+            ],
+            [
+              76.88,
+              11.26
+            ],
+            [
+              76.898,
+              11.56
+            ],
+            [
+              76.538,
+              11.5675
+            ],
+            [
+              76.493,
+              11.41
+            ],
+            [
+              76.52,
+              11.26
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "flood",
+        "population": 14000,
+        "area_name": "Chennai Adyar Basin (Tamil Nadu)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              80.02,
+              12.84
+            ],
+            [
+              80.42,
+              12.84
+            ],
+            [
+              80.44,
+              13.16
+            ],
+            [
+              80.04,
+              13.168
+            ],
+            [
+              79.99,
+              13.0
+            ],
+            [
+              80.02,
+              12.84
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "medium",
+        "hazard_type": "flood",
+        "population": 9000,
+        "area_name": "Vadodara Vishwamitri Basin (Gujarat)",
+        "priority": "short-term"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.96,
+              22.12
+            ],
+            [
+              73.4,
+              22.12
+            ],
+            [
+              73.422,
+              22.48
+            ],
+            [
+              72.982,
+              22.489
+            ],
+            [
+              72.927,
+              22.3
+            ],
+            [
+              72.96,
+              22.12
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "low",
+        "hazard_type": "flood",
+        "population": 4500,
+        "area_name": "Delhi Yamuna Floodplains (Delhi-NCR)",
+        "priority": "safe"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.07,
+              28.52
+            ],
+            [
+              77.43,
+              28.52
+            ],
+            [
+              77.448,
+              28.8
+            ],
+            [
+              77.088,
+              28.807
+            ],
+            [
+              77.043,
+              28.66
+            ],
+            [
+              77.07,
+              28.52
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "risk": "low",
+        "hazard_type": "flood",
+        "population": 5000,
+        "area_name": "Varanasi Ganga Lowlands (UP)",
+        "priority": "safe"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              82.8,
+              25.17
+            ],
+            [
+              83.2,
+              25.17
+            ],
+            [
+              83.22,
+              25.47
+            ],
+            [
+              82.82,
+              25.4775
+            ],
+            [
+              82.77,
+              25.32
+            ],
+            [
+              82.8,
+              25.17
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 25000,
+        "area_name": "Safe Zone North-1 (Dehradun FRI & Cantt Grounds)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.74,
+              30.14
+            ],
+            [
+              78.24,
+              30.14
+            ],
+            [
+              78.265,
+              30.54
+            ],
+            [
+              77.765,
+              30.55
+            ],
+            [
+              77.7025,
+              30.34
+            ],
+            [
+              77.74,
+              30.14
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 30000,
+        "area_name": "Safe Zone North-2 (Chandigarh Sports Complex)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.53,
+              30.53
+            ],
+            [
+              77.03,
+              30.53
+            ],
+            [
+              77.055,
+              30.93
+            ],
+            [
+              76.555,
+              30.94
+            ],
+            [
+              76.4925,
+              30.73
+            ],
+            [
+              76.53,
+              30.53
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 20000,
+        "area_name": "Safe Zone North-3 (Srinagar Elevated Airport Plateau)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              74.57,
+              33.82
+            ],
+            [
+              74.97,
+              33.82
+            ],
+            [
+              74.99,
+              34.14
+            ],
+            [
+              74.59,
+              34.148
+            ],
+            [
+              74.54,
+              33.98
+            ],
+            [
+              74.57,
+              33.82
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 35000,
+        "area_name": "Safe Zone North-4 (Greater Noida High-Ground Center)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.2,
+              28.25
+            ],
+            [
+              77.8,
+              28.25
+            ],
+            [
+              77.83,
+              28.69
+            ],
+            [
+              77.23,
+              28.701
+            ],
+            [
+              77.155,
+              28.47
+            ],
+            [
+              77.2,
+              28.25
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 35000,
+        "area_name": "Safe Zone East-1 (Guwahati Sarusajai & IIT Campus)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              91.4,
+              25.9
+            ],
+            [
+              91.96,
+              25.9
+            ],
+            [
+              91.988,
+              26.34
+            ],
+            [
+              91.428,
+              26.351
+            ],
+            [
+              91.358,
+              26.12
+            ],
+            [
+              91.4,
+              25.9
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 20000,
+        "area_name": "Safe Zone East-2 (Siliguri University Safe Campus)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              88.16,
+              26.53
+            ],
+            [
+              88.6,
+              26.53
+            ],
+            [
+              88.622,
+              26.89
+            ],
+            [
+              88.182,
+              26.899
+            ],
+            [
+              88.127,
+              26.71
+            ],
+            [
+              88.16,
+              26.53
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 40000,
+        "area_name": "Safe Zone East-3 (Patna AIIMS & Bihta Highland Center)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              84.74,
+              25.34
+            ],
+            [
+              85.34,
+              25.34
+            ],
+            [
+              85.37,
+              25.78
+            ],
+            [
+              84.77,
+              25.791
+            ],
+            [
+              84.695,
+              25.56
+            ],
+            [
+              84.74,
+              25.34
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 30000,
+        "area_name": "Safe Zone East-4 (Bhubaneswar Kalinga Sports Shelter)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              85.54,
+              20.08
+            ],
+            [
+              86.1,
+              20.08
+            ],
+            [
+              86.128,
+              20.52
+            ],
+            [
+              85.568,
+              20.531
+            ],
+            [
+              85.498,
+              20.3
+            ],
+            [
+              85.54,
+              20.08
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 25000,
+        "area_name": "Safe Zone East-5 (Kolkata Salt Lake Stadium High-Ground)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              88.16,
+              22.39
+            ],
+            [
+              88.64,
+              22.39
+            ],
+            [
+              88.664,
+              22.75
+            ],
+            [
+              88.184,
+              22.759
+            ],
+            [
+              88.124,
+              22.57
+            ],
+            [
+              88.16,
+              22.39
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 30000,
+        "area_name": "Safe Zone West-1 (Navi Mumbai Kharghar Elevated Complex)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.82,
+              18.85
+            ],
+            [
+              73.3,
+              18.85
+            ],
+            [
+              73.324,
+              19.21
+            ],
+            [
+              72.844,
+              19.219
+            ],
+            [
+              72.784,
+              19.03
+            ],
+            [
+              72.82,
+              18.85
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 25000,
+        "area_name": "Safe Zone West-2 (Pune Pimpri Elevated Shelter Grounds)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              73.55,
+              18.42
+            ],
+            [
+              74.05,
+              18.42
+            ],
+            [
+              74.075,
+              18.82
+            ],
+            [
+              73.575,
+              18.83
+            ],
+            [
+              73.5125,
+              18.62
+            ],
+            [
+              73.55,
+              18.42
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 20000,
+        "area_name": "Safe Zone West-3 (Ahmedabad Sardar Patel Elevated Shelter)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              72.35,
+              22.89
+            ],
+            [
+              72.85,
+              22.89
+            ],
+            [
+              72.875,
+              23.29
+            ],
+            [
+              72.375,
+              23.3
+            ],
+            [
+              72.3125,
+              23.09
+            ],
+            [
+              72.35,
+              22.89
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 20000,
+        "area_name": "Safe Zone South-1 (Kozhikode Regional Elevated Sports Complex)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              75.57,
+              11.08
+            ],
+            [
+              76.01,
+              11.08
+            ],
+            [
+              76.032,
+              11.44
+            ],
+            [
+              75.592,
+              11.449
+            ],
+            [
+              75.537,
+              11.26
+            ],
+            [
+              75.57,
+              11.08
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 25000,
+        "area_name": "Safe Zone South-2 (Kochi Infopark Elevated Convention Grounds)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              76.14,
+              9.83
+            ],
+            [
+              76.58,
+              9.83
+            ],
+            [
+              76.602,
+              10.19
+            ],
+            [
+              76.162,
+              10.199
+            ],
+            [
+              76.107,
+              10.01
+            ],
+            [
+              76.14,
+              9.83
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 35000,
+        "area_name": "Safe Zone South-3 (Bengaluru Yelahanka Elevated Center)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              77.32,
+              12.88
+            ],
+            [
+              77.88,
+              12.88
+            ],
+            [
+              77.908,
+              13.32
+            ],
+            [
+              77.348,
+              13.331
+            ],
+            [
+              77.278,
+              13.1
+            ],
+            [
+              77.32,
+              12.88
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 25000,
+        "area_name": "Safe Zone South-4 (Chennai Tambaram Airforce Elevated Grounds)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              79.87,
+              12.72
+            ],
+            [
+              80.37,
+              12.72
+            ],
+            [
+              80.395,
+              13.12
+            ],
+            [
+              79.895,
+              13.13
+            ],
+            [
+              79.8325,
+              12.92
+            ],
+            [
+              79.87,
+              12.72
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 20000,
+        "area_name": "Safe Zone South-5 (Vijayawada Gunadala Elevated Shelter)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              80.42,
+              16.32
+            ],
+            [
+              80.92,
+              16.32
+            ],
+            [
+              80.945,
+              16.72
+            ],
+            [
+              80.445,
+              16.73
+            ],
+            [
+              80.3825,
+              16.52
+            ],
+            [
+              80.42,
+              16.32
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "safe": true,
+        "capacity": 20000,
+        "area_name": "Safe Zone Central-1 (Nagpur Divisional Sports Complex)",
+        "location_type": "relocation_site"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              78.8,
+              20.93
+            ],
+            [
+              79.36,
+              20.93
+            ],
+            [
+              79.388,
+              21.37
+            ],
+            [
+              78.828,
+              21.381
+            ],
+            [
+              78.758,
+              21.15
+            ],
+            [
+              78.8,
+              20.93
+            ]
+          ]
+        ]
+      }
+    }
+  ]
 }

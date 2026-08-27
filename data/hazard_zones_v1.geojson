@@ -1,0 +1,166 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "properties": {
+                "risk": "high",
+                "hazard_type": "landslide",
+                "population": 8000,
+                "area_name": "Uttrakhand Zone",
+                "priority": "immediate"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [80.1719458, 29.1443168],
+                        [78.865871, 29.45949],
+                        [79.0679905, 30.6867059],
+                        [80.0038501, 30.3662652],
+                        [80.407623, 29.7927233],
+                        [80.1719458, 29.1443168]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "risk": "medium",
+                "population": 5000,
+                "hazard_type": "flood",
+                "area_name": "Mumbai Zone",
+                "priority": "short-term"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [72.8821321, 18.6250486],
+                        [72.9092596, 18.4193335],
+                        [73.0246283, 18.1693033],
+                        [73.2011989, 18.2813235],
+                        [72.9904442, 18.7596051],
+                        [72.8762671, 18.6341088],
+                        [72.8821321, 18.6250486]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "risk": "low",
+                "hazard_type": "landslide",
+                "population": 2000,
+                "area_name": "Delhi Zone",
+                "priority": "safe"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [77.0255985, 28.8361314],
+                        [76.9243628, 28.6594947],
+                        [76.9413759, 28.4604349],
+                        [77.3179148, 28.4648332],
+                        [77.2719987, 28.7324221],
+                        [77.0255985, 28.8361314]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "safe": true,
+                "capacity": 10000,
+                "area_name": "Safe Zone A",
+                "location_type": "relocation_site"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [78.7334939, 29.2886252],
+                        [78.5484366, 29.0588488],
+                        [78.9977442, 28.5075564],
+                        [79.6838834, 28.7889959],
+                        [79.2952158, 29.2068245],
+                        [78.7334939, 29.2886252]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "safe": true,
+                "capacity": 7500,
+                "area_name": "Safe Zone B",
+                "location_type": "relocation_site"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [73.1755696, 18.8532606],
+                        [73.1126564, 18.6820216],
+                        [73.2418895, 18.3172945],
+                        [73.5295883, 18.3121132],
+                        [73.4521693, 18.6929188],
+                        [73.1755696, 18.8532606]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "risk": "high",
+                "hazard_type": "flood",
+                "population": 6000,
+                "area_name": "Odisha Zone",
+                "priority": "immediate"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [85.5115864, 19.766539],
+                        [86.462894, 20.0793918],
+                        [85.8923696, 20.690564],
+                        [84.7829696, 20.357034],
+                        [84.1331434, 19.7586846],
+                        [83.7741022, 18.976778],
+                        [84.6186075, 18.9370371],
+                        [85.5115864, 19.766539]
+                    ]
+                ]
+            }
+        },
+        {
+            "type": "Feature",
+            "properties": {
+                "safe": true,
+                "capacity": 6500,
+                "area_name": "Safe Zone C",
+                "location_type": "relocation_site"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [82.7862598, 21.5756904],
+                        [81.7637034, 20.5188086],
+                        [81.6456561, 19.6733111],
+                        [82.6500596, 19.6042994],
+                        [83.6966351, 21.2519539],
+                        [82.7862598, 21.5756904]
+                    ]
+                ]
+            }
+        }
+    ]
+}

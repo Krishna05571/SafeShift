@@ -119,7 +119,6 @@ function App() {
           <div>
             <div className="brand-title-wrap">
               <h1 className="brand-title">SafeShift</h1>
-              <span className="sih-badge">SIH Prototype</span>
             </div>
             <p className="brand-subtitle">
               Multi-Hazard Spatial Relocation & Evacuation Intelligence
