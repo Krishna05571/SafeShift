@@ -24,6 +24,10 @@ function App() {
   const [simMetrics, setSimMetrics] = useState(null);
   const simIntervalRef = useRef(null);
 
+  // Detailed Highway Routing State (On-Demand Curved Polyline)
+  const [activeDetailedRoute, setActiveDetailedRoute] = useState(null);
+  const [loadingRoute, setLoadingRoute] = useState(false);
+
   // Fetch both /zones and /relocation-plan from FastAPI backend
   const fetchAllData = async () => {
     setLoading(true);
@@ -72,6 +76,7 @@ function App() {
       setGeoData(data.geo_data);
       setRelocationPlan(data.relocation_plan);
       setSimMetrics(data.metrics);
+      setActiveDetailedRoute(null); // Reset detailed route on simulation step change
     } catch (err) {
       console.error('Error executing disaster simulation:', err);
     }
@@ -92,6 +97,7 @@ function App() {
   const handleResetSimulation = () => {
     handlePauseSimulation();
     setSimTimeStep(0);
+    setActiveDetailedRoute(null);
     handleSimulateStep(0);
   };
 
@@ -117,6 +123,34 @@ function App() {
       }
     };
   }, [isSimulating, handleSimulateStep]);
+
+  // On-Demand Highway Route Tracing handler
+  const handleTraceRoute = async (routeItem) => {
+    if (!routeItem || !routeItem.origin_coords || !routeItem.dest_coords) return;
+    setLoadingRoute(true);
+    try {
+      const [origin_lat, origin_lon] = routeItem.origin_coords;
+      const [dest_lat, dest_lon] = routeItem.dest_coords;
+      const res = await fetch(
+        `${API_BASE_URL}/route-geometry?origin_lat=${origin_lat}&origin_lon=${origin_lon}&dest_lat=${dest_lat}&dest_lon=${dest_lon}`
+      );
+      if (!res.ok) throw new Error(`Failed to fetch route geometry (${res.status})`);
+      const data = await res.json();
+      setActiveDetailedRoute({
+        ...data,
+        from: routeItem.from,
+        to: routeItem.to,
+      });
+    } catch (err) {
+      console.error('Error fetching highway route geometry:', err);
+    } finally {
+      setLoadingRoute(false);
+    }
+  };
+
+  const handleClearDetailedRoute = () => {
+    setActiveDetailedRoute(null);
+  };
 
   // Compute live dataset analytics for quick stats and map legend
   const stats = useMemo(() => {
@@ -298,11 +332,18 @@ function App() {
                 onSelectZone={(zone) => setSelectedZone(zone)}
                 theme={theme}
                 simTimeStep={simTimeStep}
+                activeDetailedRoute={activeDetailedRoute}
+                onClearDetailedRoute={handleClearDetailedRoute}
               />
               {selectedZone && (
                 <ZoneDetailsModal
                   zone={selectedZone}
                   onClose={() => setSelectedZone(null)}
+                  relocationPlan={relocationPlan}
+                  onTraceRoute={handleTraceRoute}
+                  activeDetailedRoute={activeDetailedRoute}
+                  onClearRoute={handleClearDetailedRoute}
+                  loadingRoute={loadingRoute}
                   theme={theme}
                 />
               )}
@@ -329,11 +370,18 @@ function App() {
                   onSelectZone={(zone) => setSelectedZone(zone)}
                   theme={theme}
                   simTimeStep={simTimeStep}
+                  activeDetailedRoute={activeDetailedRoute}
+                  onClearDetailedRoute={handleClearDetailedRoute}
                 />
                 {selectedZone && (
                   <ZoneDetailsModal
                     zone={selectedZone}
                     onClose={() => setSelectedZone(null)}
+                    relocationPlan={relocationPlan}
+                    onTraceRoute={handleTraceRoute}
+                    activeDetailedRoute={activeDetailedRoute}
+                    onClearRoute={handleClearDetailedRoute}
+                    loadingRoute={loadingRoute}
                     theme={theme}
                   />
                 )}

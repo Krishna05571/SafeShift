@@ -2034,3 +2034,172 @@
   border-color: #0284c7;
   color: #0284c7;
 }
+
+/* On-Demand Highway Route in Modal Drawer */
+.panel-route-card {
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 1px solid;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dark-theme .panel-route-card {
+  background: rgba(30, 41, 59, 0.85);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.light-theme .panel-route-card {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.route-card-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dark-theme .route-card-title {
+  color: #38bdf8;
+}
+
+.light-theme .route-card-title {
+  color: #0284c7;
+}
+
+.route-dest-name {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.dark-theme .route-dest-name {
+  color: #10b981;
+}
+
+.light-theme .route-dest-name {
+  color: #059669;
+}
+
+.route-quick-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.dark-theme .route-quick-stats {
+  color: #94a3b8;
+}
+
+.light-theme .route-quick-stats {
+  color: #64748b;
+}
+
+.route-action-buttons {
+  margin-top: 4px;
+}
+
+.btn-trace-route {
+  width: 100%;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-trace-route:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+}
+
+.btn-trace-route:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.active-route-btn-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.route-active-indicator {
+  font-size: 11px;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.btn-clear-route {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  transition: all 0.2s ease;
+}
+
+.btn-clear-route:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+/* Floating Active Route Banner */
+.active-route-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid;
+  backdrop-filter: blur(12px);
+  animation: slideDown 0.2s ease-out;
+}
+
+.dark-theme .active-route-banner {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: #38bdf8;
+  color: #f8fafc;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.2);
+}
+
+.light-theme .active-route-banner {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #0284c7;
+  color: #0f172a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.active-route-tag {
+  font-size: 11px;
+}
+
+.btn-clear-active-route {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  transition: all 0.2s ease;
+}
+
+.btn-clear-active-route:hover {
+  background: #ef4444;
+  color: #ffffff;
+}

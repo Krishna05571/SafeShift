@@ -14,15 +14,17 @@ try:
     from relocation import generate_relocation_plan
     from gemini_explainer import explain_relocation_plan
     from simulation import simulate_disaster_state
+    from routing import get_detailed_route_geometry
 except ImportError:
     from .relocation import generate_relocation_plan
     from .gemini_explainer import explain_relocation_plan
     from .simulation import simulate_disaster_state
+    from .routing import get_detailed_route_geometry
 
 app = FastAPI(
     title="SafeShift Disaster Intelligence API",
     description="Multi-Hazard Spatial Relocation Engine, Road Routing, AI Explainer & Disaster Simulator",
-    version="2.1.0"
+    version="2.2.0"
 )
 
 # Enable CORS for React Frontend
@@ -53,10 +55,11 @@ class SimulationRequest(BaseModel):
 def home():
     return {
         "message": "SafeShift Disaster Intelligence API running",
-        "version": "2.1.0",
+        "version": "2.2.0",
         "endpoints": [
             "GET /zones",
             "GET /relocation-plan",
+            "GET /route-geometry?origin_lat=...&origin_lon=...&dest_lat=...&dest_lon=...",
             "GET /simulate-disaster?t=0",
             "POST /simulate-disaster",
             "POST /ai-explain",
@@ -75,10 +78,28 @@ def get_relocation_plan():
     Computes and returns the optimal relocation plan:
     - Ranks hazard zones by priority score (risk * population)
     - Pairs them with closest safe zones by road routing / centroid distances
-    - Computes distance_km and travel_time_min
+    - Computes distance_km, travel_time_min, origin_coords, and dest_coords
     - Allocates people and splits across safe zones if capacity is exceeded
     """
     return generate_relocation_plan(geo_data)
+
+@app.get("/route-geometry")
+def get_route_geometry(
+    origin_lat: float = Query(..., description="Origin Hazard Zone Latitude"),
+    origin_lon: float = Query(..., description="Origin Hazard Zone Longitude"),
+    dest_lat: float = Query(..., description="Destination Safe Shelter Latitude"),
+    dest_lon: float = Query(..., description="Destination Safe Shelter Longitude"),
+):
+    """
+    Returns high-resolution curved highway coordinates, distance, and duration
+    between a selected hazard zone and its assigned safe haven.
+    """
+    return get_detailed_route_geometry(
+        origin_lat=origin_lat,
+        origin_lon=origin_lon,
+        dest_lat=dest_lat,
+        dest_lon=dest_lon
+    )
 
 @app.get("/simulate-disaster")
 def get_simulate_disaster(t: int = Query(default=0, description="Simulation time step: 0=normal, 1=medium expands, 2=high spreads, 3=peak outbreak")):
