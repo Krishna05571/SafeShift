@@ -4,19 +4,23 @@ import StatsBar from './components/StatsBar';
 import ZoneDetailsModal from './components/ZoneDetailsModal';
 import DashboardPanel from './components/DashboardPanel';
 import SimulationController from './components/SimulationController';
+import CommandCenterEntry from './components/CommandCenterEntry';
 import './App.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 function App() {
+  // Command Center Entry Screen State
+  const [inCommandCenter, setInCommandCenter] = useState(false);
+
   const [geoData, setGeoData] = useState(null);
   const [relocationPlan, setRelocationPlan] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'map' | 'split'
-  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedFilters, setSelectedFilters] = useState(['all']); // Multi-select filter layer
   const [selectedZone, setSelectedZone] = useState(null);
-  const [theme, setTheme] = useState('dark'); // 'dark' | 'light'
+  const [theme, setTheme] = useState('light'); // 'light' (default bright) | 'dark'
 
   // Disaster Simulation State
   const [simTimeStep, setSimTimeStep] = useState(0);
@@ -152,6 +156,46 @@ function App() {
     setActiveDetailedRoute(null);
   };
 
+  // Multi-Selection Filter Toggle Logic
+  const handleToggleFilter = (filterId) => {
+    if (filterId === 'all') {
+      // If All Zones is clicked, deselect all other filters
+      setSelectedFilters(['all']);
+      return;
+    }
+
+    setSelectedFilters((prev) => {
+      // Remove 'all' when a specific filter is clicked
+      let updated = prev.filter((f) => f !== 'all');
+
+      if (updated.includes(filterId)) {
+        // Toggle off if already selected
+        updated = updated.filter((f) => f !== filterId);
+      } else {
+        // Toggle on if not selected
+        updated = [...updated, filterId];
+      }
+
+      // If all specific filters are toggled off, default back to 'all'
+      if (updated.length === 0) {
+        return ['all'];
+      }
+      return updated;
+    });
+  };
+
+  // Transition from Entry Screen to Dashboard with selected initial configuration
+  const handleEnterCommandCenter = ({ scenario, region, timeStep }) => {
+    if (scenario) {
+      setSelectedFilters(scenario === 'all' ? ['all'] : [scenario]);
+    }
+    if (timeStep !== undefined && timeStep !== simTimeStep) {
+      setSimTimeStep(timeStep);
+      handleSimulateStep(timeStep);
+    }
+    setInCommandCenter(true);
+  };
+
   // Compute live dataset analytics for quick stats and map legend
   const stats = useMemo(() => {
     if (!geoData || !geoData.features) {
@@ -209,6 +253,18 @@ function App() {
     };
   }, [geoData]);
 
+  // If not entered yet, render the Command Center Entry Screen
+  if (!inCommandCenter) {
+    return (
+      <CommandCenterEntry
+        onEnterCommandCenter={handleEnterCommandCenter}
+        initialScenario={selectedFilters.includes('all') ? 'all' : selectedFilters[0]}
+        initialTimeStep={simTimeStep}
+        isApiOnline={!error && Boolean(geoData)}
+      />
+    );
+  }
+
   return (
     <div className={`safeshift-app ${theme === 'light' ? 'light-theme' : 'dark-theme'}`}>
       {/* Top Navbar */}
@@ -250,7 +306,7 @@ function App() {
           </button>
         </div>
 
-        {/* Theme Toggle & Status */}
+        {/* Theme Toggle, Status & Exit to Config */}
         <div className="nav-status">
           <button
             type="button"
@@ -277,6 +333,15 @@ function App() {
             title="Sync Live GIS & Relocation Data"
           >
             🔄 Sync Data
+          </button>
+
+          <button
+            type="button"
+            className="config-exit-btn"
+            onClick={() => setInCommandCenter(false)}
+            title="Return to Command Center Entry Configuration Screen"
+          >
+            ⚙️ Setup
           </button>
         </div>
       </header>
@@ -319,8 +384,8 @@ function App() {
           <div className="map-full-view">
             <StatsBar
               stats={stats}
-              selectedFilter={selectedFilter}
-              onSelectFilter={setSelectedFilter}
+              selectedFilters={selectedFilters}
+              onToggleFilter={handleToggleFilter}
               theme={theme}
             />
             <div className="map-view-container">
@@ -328,7 +393,7 @@ function App() {
                 geoData={geoData}
                 relocationPlan={relocationPlan}
                 stats={stats}
-                selectedFilter={selectedFilter}
+                selectedFilters={selectedFilters}
                 onSelectZone={(zone) => setSelectedZone(zone)}
                 theme={theme}
                 simTimeStep={simTimeStep}
@@ -357,8 +422,8 @@ function App() {
             <div className="split-left-pane">
               <StatsBar
                 stats={stats}
-                selectedFilter={selectedFilter}
-                onSelectFilter={setSelectedFilter}
+                selectedFilters={selectedFilters}
+                onToggleFilter={handleToggleFilter}
                 theme={theme}
               />
               <div className="map-view-container">
@@ -366,7 +431,7 @@ function App() {
                   geoData={geoData}
                   relocationPlan={relocationPlan}
                   stats={stats}
-                  selectedFilter={selectedFilter}
+                  selectedFilters={selectedFilters}
                   onSelectZone={(zone) => setSelectedZone(zone)}
                   theme={theme}
                   simTimeStep={simTimeStep}

@@ -14,12 +14,12 @@
 
 /* Theme Roots */
 .dark-theme {
-  background-color: #0b0f19;
+  background-color: #1e293b;
   color: #f8fafc;
 }
 
 .light-theme {
-  background-color: #f1f5f9;
+  background-color: #f8fafc;
   color: #0f172a;
 }
 
@@ -2202,4 +2202,692 @@
 .btn-clear-active-route:hover {
   background: #ef4444;
   color: #ffffff;
+}
+
+/* ==========================================
+   SCENIC COMMAND CENTER ENTRY SCREEN (V2)
+   ========================================== */
+.entry-v2-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 9999;
+  padding: 18px 24px 30px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #0f172a;
+  transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.entry-v2-container.launch-transition-active {
+  opacity: 0;
+  transform: scale(1.03);
+  pointer-events: none;
+}
+
+/* Scenic Mountain Landscape Background */
+.entry-v2-landscape-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(180deg, rgba(191, 219, 254, 0.7) 0%, rgba(224, 242, 254, 0.4) 35%, rgba(100, 116, 139, 0.6) 70%, rgba(30, 41, 59, 0.95) 100%),
+    radial-gradient(ellipse at 30% 30%, #93c5fd 0%, #60a5fa 35%, #3b82f6 75%, #1e3a8a 100%);
+  background-size: cover;
+  background-position: center bottom;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.entry-v2-landscape-bg::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 52%;
+  background: 
+    linear-gradient(135deg, rgba(51, 65, 85, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%),
+    radial-gradient(circle at 15% 75%, rgba(16, 185, 129, 0.3), transparent 50%),
+    radial-gradient(circle at 75% 85%, rgba(37, 99, 235, 0.3), transparent 50%);
+  clip-path: polygon(
+    0% 100%, 0% 50%, 12% 40%, 25% 55%, 38% 30%, 55% 48%, 70% 25%, 85% 42%, 100% 32%, 100% 100%
+  );
+  filter: blur(1px);
+}
+
+.entry-v2-clouds-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 55%;
+  background: radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.25) 50%, transparent 85%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Glowing Sunrise Burst behind the Left India Map */
+.entry-v2-sunrise-burst {
+  position: absolute;
+  left: 8%;
+  top: 30%;
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.5) 0%, rgba(245, 158, 11, 0.25) 40%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Background Left: Glowing India Map Contour with Radiant Star Nodes */
+.entry-v2-map-left-container {
+  position: absolute;
+  left: 2.5%;
+  top: 14%;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.india-map-glow-svg {
+  width: 420px;
+  height: 520px;
+  filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.6));
+}
+
+.india-star-node-group {
+  animation: starPulseGlow 2.2s infinite ease-in-out;
+  transform-origin: center;
+}
+
+@keyframes starPulseGlow {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 14px #fef08a);
+  }
+}
+
+/* Top Floating Status Bars */
+.entry-v2-top-header {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 1280px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.top-status-group-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-pill-primary {
+  background: rgba(16, 185, 129, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.15);
+}
+
+.live-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.8);
+}
+
+.top-status-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #334155;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.node-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.dot-blue {
+  background-color: #3b82f6;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.8);
+}
+
+.dot-purple {
+  background-color: #a855f7;
+  box-shadow: 0 0 6px rgba(168, 85, 247, 0.8);
+}
+
+.dot-red {
+  background-color: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+}
+
+.top-status-group-right {
+  display: flex;
+  align-items: center;
+}
+
+.top-version-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.shield-tiny-icon {
+  font-size: 12px;
+}
+
+/* Center Layout: Header & Main Card */
+.entry-v2-main-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 660px;
+}
+
+/* Crisp Frosted Glassmorphism Command Center Card */
+.entry-v2-glass-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  padding: 22px 28px;
+  box-shadow: 
+    0 25px 70px rgba(15, 23, 42, 0.16),
+    0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Brand Section inside the Card */
+.entry-v2-brand-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 2px;
+}
+
+.brand-logo-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-shield-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 4px 10px rgba(37, 99, 235, 0.25));
+}
+
+.brand-heading {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -0.8px;
+}
+
+.brand-safe {
+  color: #1d4ed8;
+}
+
+.brand-shift {
+  color: #16a34a;
+}
+
+.brand-tagline-main {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.2px;
+}
+
+.brand-motto-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #059669;
+}
+
+.motto-dash {
+  opacity: 0.7;
+}
+
+/* Sections */
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-label-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-num-badge {
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.section-label-text {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: 0.5px;
+}
+
+/* 1. Hazard Scenario Cards */
+.scenarios-row-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.scenario-v2-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.scenario-v2-card:hover {
+  border-color: #93c5fd;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.08);
+}
+
+.scenario-v2-card.active {
+  background: #eff6ff;
+  border: 1.5px solid #3b82f6;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.12);
+}
+
+.scenario-card-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scenario-thumb-box {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.scenario-text-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.scenario-name {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.scenario-v2-card.active .scenario-name {
+  color: #1d4ed8;
+}
+
+.scenario-sub {
+  font-size: 9px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.scenario-check-badge {
+  font-size: 12px;
+  font-weight: 900;
+  color: #2563eb;
+}
+
+/* 2. Operational Region Dropdown */
+.region-dropdown-box {
+  position: relative;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  padding: 2px 14px;
+  transition: all 0.2s ease;
+}
+
+.region-dropdown-box:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  background: #ffffff;
+}
+
+.region-pin-icon {
+  font-size: 14px;
+  margin-right: 8px;
+  color: #64748b;
+}
+
+.region-native-select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 9px 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+}
+
+.dropdown-chevron-icon {
+  font-size: 10px;
+  color: #64748b;
+  pointer-events: none;
+}
+
+/* 3. Simulation Phases Grid */
+.simulation-phases-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.phase-v2-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.phase-v2-card:hover {
+  border-color: var(--phase-border);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+}
+
+.phase-v2-card.active {
+  background: var(--phase-bg);
+  border: 1.5px solid var(--phase-accent);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+}
+
+.phase-v2-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.phase-icon-tag {
+  font-size: 13px;
+}
+
+.phase-v2-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.phase-tag-text {
+  color: var(--phase-accent);
+}
+
+.phase-v2-sub {
+  font-size: 9px;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+/* Big Action Button */
+.launch-action-row {
+  margin-top: 2px;
+}
+
+.launch-command-btn {
+  width: 100%;
+  padding: 13px 20px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(90deg, #2563eb 0%, #22c55e 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3), 0 4px 12px rgba(37, 99, 235, 0.3);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.launch-command-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(34, 197, 94, 0.4), 0 6px 16px rgba(37, 99, 235, 0.4);
+}
+
+.launch-command-btn:active {
+  transform: translateY(0);
+}
+
+.target-aim-icon {
+  font-size: 15px;
+}
+
+.btn-arrow-icon {
+  font-size: 14px;
+  transition: transform 0.2s ease;
+}
+
+.launch-command-btn:hover .btn-arrow-icon {
+  transform: translateX(4px);
+}
+
+/* Card Footer Bar */
+.entry-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: #64748b;
+  padding-top: 8px;
+  border-top: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.footer-shield-icon {
+  font-size: 11px;
+}
+
+.footer-left strong {
+  color: #1e293b;
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.footer-emblem {
+  font-size: 11px;
+}
+
+/* Bottom Horizontal Row: 4 Feature Pillars */
+.entry-v2-bottom-features-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 36px;
+  margin-top: 20px;
+  z-index: 10;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.bottom-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bottom-feature-bubble {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.bottom-feature-icon {
+  font-size: 14px;
+}
+
+.bottom-feature-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1e293b;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .entry-v2-map-left-container {
+    opacity: 0.35;
+    left: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .scenarios-row-grid {
+    grid-template-columns: 1fr;
+  }
+  .simulation-phases-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .entry-v2-bottom-features-row {
+    gap: 16px;
+  }
+}
+
+/* Dashboard Setup Return Button */
+.config-exit-btn {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.config-exit-btn:hover {
+  background: #38bdf8;
+  color: #0f172a;
 }

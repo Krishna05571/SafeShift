@@ -61,9 +61,10 @@ export default function HazardMap({
   geoData,
   relocationPlan = [],
   stats,
-  selectedFilter = 'all',
+  selectedFilters = ['all'],
+  selectedFilter = 'all', // backward compatibility fallback
   onSelectZone,
-  theme = 'dark',
+  theme = 'light',
   simTimeStep = 0,
   activeDetailedRoute = null,
   onClearDetailedRoute = null,
@@ -71,42 +72,74 @@ export default function HazardMap({
   const geoJsonRef = useRef(null);
   const [showCorridors, setShowCorridors] = useState(true);
 
-  // Filter features based on active user filter
+  // Normalize selected filters into an array
+  const filters = React.useMemo(() => {
+    if (Array.isArray(selectedFilters) && selectedFilters.length > 0) {
+      return selectedFilters;
+    }
+    return [selectedFilter || 'all'];
+  }, [selectedFilters, selectedFilter]);
+
+  // Multi-Select Feature Filter
   const filteredData = React.useMemo(() => {
     if (!geoData || !geoData.features) return null;
-    if (selectedFilter === 'all') return geoData;
+    if (filters.includes('all')) return geoData;
+
+    const hasSafeFilter = filters.includes('safe');
+    const riskFilters = filters.filter((f) => ['high', 'medium', 'low'].includes(f));
+    const hazardFilters = filters.filter((f) => ['flood', 'landslide'].includes(f));
 
     const filteredFeatures = geoData.features.filter((f) => {
       const props = f.properties || {};
-      if (selectedFilter === 'safe') return props.safe === true;
-      if (selectedFilter === 'high') return props.risk === 'high';
-      if (selectedFilter === 'medium') return props.risk === 'medium';
-      if (selectedFilter === 'low') return props.risk === 'low';
-      if (selectedFilter === 'landslide') return props.hazard_type === 'landslide';
-      if (selectedFilter === 'flood') return props.hazard_type === 'flood';
-      return true;
+      const isSafe = props.safe === true || props.location_type === 'relocation_site';
+      const risk = (props.risk || '').toLowerCase();
+      const hazard = (props.hazard_type || '').toLowerCase();
+
+      // If this feature is a safe zone
+      if (isSafe) {
+        return hasSafeFilter;
+      }
+
+      // If user selected ONLY safe zones, don't show hazard zones
+      if (hasSafeFilter && riskFilters.length === 0 && hazardFilters.length === 0) {
+        return false;
+      }
+
+      const matchesRisk = riskFilters.length === 0 || riskFilters.includes(risk);
+      const matchesHazard = hazardFilters.length === 0 || hazardFilters.includes(hazard);
+
+      return matchesRisk && matchesHazard;
     });
 
     return {
       ...geoData,
       features: filteredFeatures,
     };
-  }, [geoData, selectedFilter]);
+  }, [geoData, filters]);
 
-  // Filter relocation routes based on the active risk filter
+  // Multi-Select Relocation Routes Filter
   const filteredRoutes = React.useMemo(() => {
     if (!relocationPlan || relocationPlan.length === 0) return [];
-    if (selectedFilter === 'all' || selectedFilter === 'safe') return relocationPlan;
+    if (filters.includes('all')) return relocationPlan;
+
+    const riskFilters = filters.filter((f) => ['high', 'medium', 'low'].includes(f));
+    const hazardFilters = filters.filter((f) => ['flood', 'landslide'].includes(f));
+
+    // If only safe zone filter is active, show all corresponding routes
+    if (filters.includes('safe') && riskFilters.length === 0 && hazardFilters.length === 0) {
+      return relocationPlan;
+    }
 
     return relocationPlan.filter((r) => {
-      if (selectedFilter === 'high') return r.risk === 'high';
-      if (selectedFilter === 'medium') return r.risk === 'medium';
-      if (selectedFilter === 'low') return r.risk === 'low';
-      if (selectedFilter === 'landslide') return r.hazard_type === 'landslide';
-      if (selectedFilter === 'flood') return r.hazard_type === 'flood';
-      return true;
+      const risk = (r.risk || '').toLowerCase();
+      const hazard = (r.hazard_type || '').toLowerCase();
+
+      const matchesRisk = riskFilters.length === 0 || riskFilters.includes(risk);
+      const matchesHazard = hazardFilters.length === 0 || hazardFilters.includes(hazard);
+
+      return matchesRisk && matchesHazard;
     });
-  }, [relocationPlan, selectedFilter]);
+  }, [relocationPlan, filters]);
 
   // Handle polygon hover, mouseout, and click behaviors
   const onEachFeature = (feature, layer) => {
@@ -151,6 +184,8 @@ export default function HazardMap({
   const defaultCenter = [22.9734, 78.6569];
   const defaultZoom = 5;
 
+  const filtersKey = filters.sort().join('_');
+
   return (
     <div className="map-wrapper">
       <MapContainer
@@ -168,7 +203,7 @@ export default function HazardMap({
         {/* Hazard & Safe Polygons */}
         {filteredData && (
           <GeoJSON
-            key={`${selectedFilter}-${filteredData.features.length}-${theme}-t${simTimeStep}`}
+            key={`${filtersKey}-${filteredData.features.length}-${theme}-t${simTimeStep}`}
             ref={geoJsonRef}
             data={filteredData}
             style={getZoneStyle}

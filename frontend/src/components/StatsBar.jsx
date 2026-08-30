@@ -2,9 +2,23 @@ import React from 'react';
 
 export default function StatsBar({
   stats,
-  selectedFilter,
+  selectedFilters = ['all'],
+  onToggleFilter,
+  selectedFilter, // backward compatibility fallback
   onSelectFilter,
 }) {
+  const activeFilters = Array.isArray(selectedFilters)
+    ? selectedFilters
+    : [selectedFilter || 'all'];
+
+  const handleChipClick = (id) => {
+    if (onToggleFilter) {
+      onToggleFilter(id);
+    } else if (onSelectFilter) {
+      onSelectFilter(id);
+    }
+  };
+
   const filters = [
     { id: 'all', label: 'All Zones', count: stats.totalZones },
     { id: 'high', label: '🔴 High Risk', count: stats.highRiskCount },
@@ -56,23 +70,31 @@ export default function StatsBar({
         </div>
       </div>
 
-      {/* Filter Chips Bar */}
+      {/* Multi-Selectable Filter Chips Bar */}
       <div className="filter-chips-bar">
         <span className="filter-title">Filter Layer:</span>
         <div className="filter-chips">
-          {filters.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              className={`filter-chip ${selectedFilter === f.id ? 'active' : ''}`}
-              onClick={() => onSelectFilter(f.id)}
-            >
-              {f.label}
-              {f.count !== undefined && (
-                <span className="filter-chip-count">{f.count}</span>
-              )}
-            </button>
-          ))}
+          {filters.map((f) => {
+            const isChipActive = activeFilters.includes(f.id);
+            return (
+              <button
+                key={f.id}
+                type="button"
+                className={`filter-chip ${isChipActive ? 'active' : ''}`}
+                onClick={() => handleChipClick(f.id)}
+                title={
+                  f.id === 'all'
+                    ? 'Show all zones (clears other filters)'
+                    : `Toggle ${f.label} filter`
+                }
+              >
+                {f.label}
+                {f.count !== undefined && (
+                  <span className="filter-chip-count">{f.count}</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
