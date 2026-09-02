@@ -81,14 +81,24 @@
   font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
 }
 
-.dark-theme .brand-title {
-  color: #ffffff;
+.brand-title-navy {
+  color: #0B2A4A;
+  transition: color 0.2s ease;
 }
 
-.light-theme .brand-title {
-  color: #0f172a;
+.dark-theme .brand-title-navy {
+  color: #f8fafc;
+}
+
+.brand-title-green {
+  background: linear-gradient(90deg, #0FA36B, #14B8A6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .sih-badge {

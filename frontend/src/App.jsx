@@ -5,6 +5,7 @@ import ZoneDetailsModal from './components/ZoneDetailsModal';
 import DashboardPanel from './components/DashboardPanel';
 import SimulationController from './components/SimulationController';
 import CommandCenterEntry from './components/CommandCenterEntry';
+import SafeShiftLogo from './components/SafeShiftLogo';
 import './App.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
@@ -270,10 +271,13 @@ function App() {
       {/* Top Navbar */}
       <header className="app-navbar">
         <div className="nav-brand">
-          <div className="brand-icon">🛡️</div>
+          <SafeShiftLogo iconOnly size={34} />
           <div>
             <div className="brand-title-wrap">
-              <h1 className="brand-title">SafeShift</h1>
+              <h1 className="brand-title">
+                <span className="brand-title-navy">Safe</span>
+                <span className="brand-title-green">Shift</span>
+              </h1>
             </div>
             <p className="brand-subtitle">
               Multi-Hazard Spatial Relocation & Evacuation Intelligence

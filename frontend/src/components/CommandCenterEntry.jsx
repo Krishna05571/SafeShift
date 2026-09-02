@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SafeShiftLogo from './SafeShiftLogo';
 import {
   Shield,
   MapPin,
@@ -542,10 +543,7 @@ export default function CommandCenterEntry({
 
       <div className="scc-hero">
         <div className="scc-logo-row">
-          <h1 className="scc-title">
-            <span className="navy">Safe</span>
-            <span className="grad">Shift</span>
-          </h1>
+          <SafeShiftLogo size={76} />
         </div>
         <p className="scc-subtitle">
           Multi-Hazard Spatial Relocation &amp; Evacuation Intelligence
