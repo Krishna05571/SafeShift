@@ -8,7 +8,6 @@ export default function Legend({ stats = {} }) {
     <div className="legend-container">
       <div className="legend-header" onClick={() => setCollapsed(!collapsed)}>
         <div className="legend-title">
-          <span className="legend-icon">🧭</span>
           <span>Risk & Safety Legend</span>
         </div>
         <button
@@ -81,7 +80,7 @@ export default function Legend({ stats = {} }) {
           </div>
 
           <div className="legend-tip">
-            💡 <em>Click any polygon on the map for live evacuation metrics</em>
+            <em>Click any polygon on the map for live evacuation metrics</em>
           </div>
         </div>
       )}

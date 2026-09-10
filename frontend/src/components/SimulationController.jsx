@@ -37,8 +37,8 @@ export default function SimulationController({
           title="Open Disaster Simulation Dock"
         >
           <span className="sim-pulse-dot" style={{ backgroundColor: currentPhase.border }} />
-          <span>⚡ Simulator: {currentPhase.label}</span>
-          <span className="expand-icon">▲</span>
+          <span>Simulator: {currentPhase.label}</span>
+          <span className="expand-icon">Expand</span>
         </button>
       </div>
     );
@@ -48,7 +48,6 @@ export default function SimulationController({
     <div className="sim-dock-container">
       {/* Left: Brand / Title */}
       <div className="sim-dock-header">
-        <span className="sim-dock-icon">⚡</span>
         <div className="sim-dock-titles">
           <span className="sim-dock-title">Disaster Simulator</span>
           <span className="sim-dock-phase" style={{ color: currentPhase.text }}>
@@ -66,7 +65,7 @@ export default function SimulationController({
             onClick={onStartSimulation}
             title="Start automated dynamic disaster simulation"
           >
-            ▶ Play
+            Play
           </button>
         ) : (
           <button
@@ -75,7 +74,7 @@ export default function SimulationController({
             onClick={onPauseSimulation}
             title="Pause simulation"
           >
-            ⏸ Pause
+            Pause
           </button>
         )}
 
@@ -85,7 +84,7 @@ export default function SimulationController({
           onClick={onResetSimulation}
           title="Reset to baseline"
         >
-          🔄
+          Reset
         </button>
       </div>
 
@@ -121,7 +120,7 @@ export default function SimulationController({
         onClick={() => setIsMinimized(true)}
         title="Minimize Dock"
       >
-        ▼
+        Minimize
       </button>
     </div>
   );

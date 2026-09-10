@@ -486,28 +486,28 @@ function App() {
             className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
             onClick={() => setActiveTab('dashboard')}
           >
-            📊 Analytics & Relocation
+            Analytics & Relocation
           </button>
           <button
             type="button"
             className={`tab-btn ${activeTab === 'capacity' ? 'active' : ''}`}
             onClick={() => setActiveTab('capacity')}
           >
-            🛡️ Shelter Capacities
+            Shelter Capacities
           </button>
           <button
             type="button"
             className={`tab-btn ${activeTab === 'map' ? 'active' : ''}`}
             onClick={() => setActiveTab('map')}
           >
-            🗺️ GIS Map View
+            GIS Map View
           </button>
           <button
             type="button"
             className={`tab-btn ${activeTab === 'split' ? 'active' : ''}`}
             onClick={() => setActiveTab('split')}
           >
-            ⚡ Split Command View
+            Split Command View
           </button>
         </div>
 
@@ -523,7 +523,7 @@ function App() {
                 : 'Switch to Dark Mode'
             }
           >
-            {theme === 'dark' ? '☀️ Light UI' : '🌙 Dark UI'}
+            {theme === 'dark' ? 'Light UI' : 'Dark UI'}
           </button>
 
           <div className={`status-indicator ${error ? 'offline' : 'online'}`}>
@@ -538,7 +538,7 @@ function App() {
             disabled={isRefreshingWeather}
             title="Sync live Open-Meteo weather & recompute risks"
           >
-            {isRefreshingWeather ? '⏳ Syncing...' : '🌦️ Sync Weather'}
+            {isRefreshingWeather ? 'Syncing...' : 'Sync Weather'}
           </button>
 
           <button
@@ -547,7 +547,7 @@ function App() {
             onClick={() => setInCommandCenter(false)}
             title="Return to Command Center Entry Configuration Screen"
           >
-            ⚙️ Setup
+            Setup
           </button>
         </div>
       </header>
@@ -572,7 +572,7 @@ function App() {
 
         {error && !geoData && (
           <div className="map-error-banner">
-            <div className="error-icon">⚠️</div>
+            <div className="error-icon">!</div>
             <div className="error-text">
               <h3>Backend Connection Notice</h3>
               <p>{error}</p>

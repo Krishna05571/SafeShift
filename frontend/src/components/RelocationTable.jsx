@@ -20,7 +20,7 @@ export default function RelocationTable({ relocationPlan = [] }) {
     <div className="table-card">
       <div className="table-card-header">
         <div>
-          <h3 className="table-title">📋 Live Relocation & Evacuation Dispatch Plan</h3>
+          <h3 className="table-title">Live Relocation & Evacuation Dispatch Plan</h3>
           <p className="table-subtitle">
             Optimal algorithmic matching based on hazard priority, real-world road routing, and shelter capacity
           </p>
@@ -30,7 +30,7 @@ export default function RelocationTable({ relocationPlan = [] }) {
           <input
             type="text"
             className="table-search-input"
-            placeholder="🔍 Search zones..."
+            placeholder="Search zones..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -83,7 +83,7 @@ export default function RelocationTable({ relocationPlan = [] }) {
                     </td>
                     <td>
                       <span className="hazard-type-tag">
-                        {item.hazard_type === 'landslide' ? '⛰️ Landslide' : '🌊 Flood'}
+                        {item.hazard_type === 'landslide' ? 'Landslide' : 'Flood'}
                       </span>
                     </td>
                     <td>
@@ -102,7 +102,6 @@ export default function RelocationTable({ relocationPlan = [] }) {
                     </td>
                     <td>
                       <div className="safe-destination-tag">
-                        <span>🛡️</span>
                         <strong>{item.to}</strong>
                       </div>
                     </td>
@@ -118,7 +117,7 @@ export default function RelocationTable({ relocationPlan = [] }) {
                     </td>
                     <td>
                       <span className="time-badge font-mono">
-                        {item.travel_time_min ? `⏱️ ${item.travel_time_min} min` : 'N/A'}
+                        {item.travel_time_min ? `${item.travel_time_min} min` : 'N/A'}
                       </span>
                     </td>
                   </tr>
@@ -131,7 +130,7 @@ export default function RelocationTable({ relocationPlan = [] }) {
 
       <div className="table-footer">
         <span>Showing {filteredPlan.length} of {relocationPlan.length} evacuation routes</span>
-        <span className="algorithm-note">⚡ Real-world road routing distance & travel time estimation</span>
+        <span className="algorithm-note">Real-world road routing distance & travel time estimation</span>
       </div>
     </div>
   );

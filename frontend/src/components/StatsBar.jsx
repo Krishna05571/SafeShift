@@ -26,12 +26,12 @@ export default function StatsBar({
 
   const filters = [
     { id: 'all', label: 'All Zones', count: stats.totalZones },
-    { id: 'high', label: '🔴 High Risk', count: stats.highRiskCount },
-    { id: 'medium', label: '🟠 Medium Risk', count: stats.mediumRiskCount },
-    { id: 'low', label: '🟡 Low Risk', count: stats.lowRiskCount },
-    { id: 'safe', label: '🟢 Safe Zones', count: stats.safeZoneCount },
-    { id: 'landslide', label: '⛰️ Landslide', count: stats.landslideCount },
-    { id: 'flood', label: '🌊 Flood', count: stats.floodCount },
+    { id: 'high', label: 'High Risk', count: stats.highRiskCount },
+    { id: 'medium', label: 'Medium Risk', count: stats.mediumRiskCount },
+    { id: 'low', label: 'Low Risk', count: stats.lowRiskCount },
+    { id: 'safe', label: 'Safe Zones', count: stats.safeZoneCount },
+    { id: 'landslide', label: 'Landslide', count: stats.landslideCount },
+    { id: 'flood', label: 'Flood', count: stats.floodCount },
   ];
 
   return (
@@ -47,7 +47,7 @@ export default function StatsBar({
               onClick={() => onToggleRiskMode && onToggleRiskMode('baseline')}
               title="View historical vulnerability baseline (Standard Red / Orange / Yellow zones)"
             >
-              📊 Baseline Vulnerability
+              Baseline Vulnerability
             </button>
             <button
               type="button"
@@ -55,7 +55,7 @@ export default function StatsBar({
               onClick={() => onToggleRiskMode && onToggleRiskMode('live')}
               title="View dynamic risks predicted by real-time precipitation"
             >
-              🌦️ Live Weather Risk
+              Live Weather Risk
             </button>
           </div>
         </div>
@@ -71,7 +71,6 @@ export default function StatsBar({
       {/* Metrics Cards */}
       <div className="metrics-grid">
         <div className="metric-card">
-          <div className="metric-icon">🗺️</div>
           <div className="metric-content">
             <span className="metric-label">Monitored Zones</span>
             <span className="metric-value">{stats.totalZones || 0}</span>
@@ -79,7 +78,6 @@ export default function StatsBar({
         </div>
 
         <div className="metric-card alert-card">
-          <div className="metric-icon">⚠️</div>
           <div className="metric-content">
             <span className="metric-label">High-Risk Zones</span>
             <span className="metric-value text-red">{stats.highRiskCount || 0}</span>
@@ -87,7 +85,6 @@ export default function StatsBar({
         </div>
 
         <div className="metric-card">
-          <div className="metric-icon">👥</div>
           <div className="metric-content">
             <span className="metric-label">Vulnerable Population</span>
             <span className="metric-value text-orange">
@@ -97,7 +94,6 @@ export default function StatsBar({
         </div>
 
         <div className="metric-card safe-card">
-          <div className="metric-icon">🛡️</div>
           <div className="metric-content">
             <span className="metric-label">Shelter Capacity</span>
             <span className="metric-value text-green">
@@ -108,7 +104,6 @@ export default function StatsBar({
 
         {/* Live Weather Status Card */}
         <div className="metric-card weather-status-card">
-          <div className="metric-icon">🌦️</div>
           <div className="metric-content">
             <div className="weather-metric-top">
               <span className="metric-label">Live Weather Sync</span>
@@ -120,14 +115,14 @@ export default function StatsBar({
                   disabled={isRefreshingWeather}
                   title="Sync real-time rainfall & recalculate disaster risks"
                 >
-                  {isRefreshingWeather ? '⏳' : '🔄'}
+                  {isRefreshingWeather ? 'Syncing...' : 'Sync'}
                 </button>
               )}
             </div>
             <span className="metric-value text-blue" style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <span className="live-weather-pulse" />
               {weatherMeta?.smart_alerts_count > 0
-                ? `🚨 ${weatherMeta.smart_alerts_count} Surge Alerts`
+                ? `${weatherMeta.smart_alerts_count} Surge Alerts`
                 : 'Active & Predicted'}
             </span>
           </div>

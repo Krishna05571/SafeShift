@@ -202,7 +202,6 @@ export default function DashboardPanel({
       <div className="kpi-grid">
         {/* Metric 1 */}
         <div className="kpi-card kpi-critical">
-          <div className="kpi-icon-wrap">🚨</div>
           <div className="kpi-details">
             <span className="kpi-label">High-Risk Population</span>
             <div className="kpi-val-group">
@@ -217,7 +216,6 @@ export default function DashboardPanel({
 
         {/* Metric 2 */}
         <div className="kpi-card kpi-warning">
-          <div className="kpi-icon-wrap">⚡</div>
           <div className="kpi-details">
             <span className="kpi-label">Immediate Priority Zones</span>
             <div className="kpi-val-group">
@@ -232,7 +230,6 @@ export default function DashboardPanel({
 
         {/* Metric 3 */}
         <div className="kpi-card kpi-success">
-          <div className="kpi-icon-wrap">🛡️</div>
           <div className="kpi-details">
             <span className="kpi-label">Total Safe Capacity</span>
             <div className="kpi-val-group">
@@ -247,7 +244,6 @@ export default function DashboardPanel({
 
         {/* Metric 4 */}
         <div className="kpi-card kpi-info">
-          <div className="kpi-icon-wrap">👥</div>
           <div className="kpi-details">
             <span className="kpi-label">People Relocated</span>
             <div className="kpi-val-group">
@@ -267,7 +263,7 @@ export default function DashboardPanel({
         {/* Chart 1: Relocation Population by Hazard Zone */}
         <div className="chart-card">
           <div className="chart-header">
-            <h4>📊 People Relocated by Origin Hazard Zone</h4>
+            <h4>People Relocated by Origin Hazard Zone</h4>
             <span className="chart-badge">Algorithmic Dispatch</span>
           </div>
           <div className="chart-body">
@@ -290,7 +286,7 @@ export default function DashboardPanel({
         {/* Chart 2: Risk Population Severity Breakdown */}
         <div className="chart-card">
           <div className="chart-header">
-            <h4>🎯 Population by Risk Severity</h4>
+            <h4>Population by Risk Severity</h4>
             <span className="chart-badge">Hazard Exposure</span>
           </div>
           <div className="chart-body flex-center">
@@ -321,7 +317,7 @@ export default function DashboardPanel({
         {/* Chart 3: Safe Zone Capacity Utilization */}
         <div className="chart-card chart-card-wide">
           <div className="chart-header">
-            <h4>🏨 Safe Shelter Capacity Utilization</h4>
+            <h4>Safe Shelter Capacity Utilization</h4>
             <span className="chart-badge">Capacity vs Load</span>
           </div>
           <div className="chart-body">

@@ -275,8 +275,8 @@ export default function HazardMap({
     ).toUpperCase();
 
     const tooltipText = props.safe
-      ? `🛡️ ${props.area_name} (${props.fill_percentage !== undefined ? `${props.fill_percentage}% Occupied` : `Cap: ${props.capacity?.toLocaleString() || 'N/A'}`})`
-      : `⚠️ ${props.area_name} (${currentRisk} RISK | 🌧️ ${props.rainfall ?? 0}mm | Pop: ${(props.population || 0).toLocaleString()})`;
+      ? `${props.area_name} (${props.fill_percentage !== undefined ? `${props.fill_percentage}% Occupied` : `Cap: ${props.capacity?.toLocaleString() || 'N/A'}`})`
+      : `${props.area_name} (${currentRisk} RISK | Rain: ${props.rainfall ?? 0}mm | Pop: ${(props.population || 0).toLocaleString()})`;
     layer.bindTooltip(tooltipText, {
       sticky: true,
       direction: 'top',
@@ -361,7 +361,7 @@ export default function HazardMap({
                 <Tooltip sticky direction="top" className="safeshift-route-tooltip">
                   <div className="route-tooltip-container">
                     <div className="route-tooltip-header">
-                      <span className="route-tooltip-tag">🛣️ Evacuation Corridor</span>
+                      <span className="route-tooltip-tag">Evacuation Corridor</span>
                       <span
                         className={`route-risk-pill ${
                           isHigh ? 'pill-high' : isLow ? 'pill-low' : 'pill-medium'
@@ -373,7 +373,7 @@ export default function HazardMap({
 
                     <div className="route-tooltip-path">
                       <span className="origin-text">{route.from}</span>
-                      <span className="route-arrow">➔</span>
+                      <span className="route-arrow">to</span>
                       <span className="dest-text">{route.to}</span>
                     </div>
 
@@ -381,21 +381,21 @@ export default function HazardMap({
                       <div className="route-stat-item">
                         <span className="stat-label">Evacuees:</span>
                         <strong className="stat-val text-people">
-                          👥 {(route.people || 0).toLocaleString()}
+                          {(route.people || 0).toLocaleString()}
                         </strong>
                       </div>
 
                       <div className="route-stat-item">
                         <span className="stat-label">Travel Time:</span>
                         <strong className="stat-val text-time">
-                          ⏱️ {route.travel_time_min ? `${route.travel_time_min} min` : 'N/A'}
+                          {route.travel_time_min ? `${route.travel_time_min} min` : 'N/A'}
                         </strong>
                       </div>
 
                       <div className="route-stat-item">
                         <span className="stat-label">Road Distance:</span>
                         <strong className="stat-val text-dist">
-                          📍 {route.distance_km ? `${route.distance_km} km` : 'N/A'}
+                          {route.distance_km ? `${route.distance_km} km` : 'N/A'}
                         </strong>
                       </div>
                     </div>
@@ -437,25 +437,25 @@ export default function HazardMap({
                 <Tooltip sticky direction="top" className="safeshift-route-tooltip">
                   <div className="route-tooltip-container">
                     <div className="route-tooltip-header">
-                      <span className="route-tooltip-tag">🗺️ Real Highway Navigation</span>
+                      <span className="route-tooltip-tag">Real Highway Navigation</span>
                       <span className="route-risk-pill pill-high">ACTIVE ROUTE</span>
                     </div>
                     <div className="route-tooltip-path">
                       <span className="origin-text">{activeDetailedRoute.from}</span>
-                      <span className="route-arrow">➔</span>
+                      <span className="route-arrow">to</span>
                       <span className="dest-text">{activeDetailedRoute.to}</span>
                     </div>
                     <div className="route-tooltip-grid">
                       <div className="route-stat-item">
                         <span className="stat-label">Total Distance:</span>
                         <strong className="stat-val text-dist">
-                          📍 {activeDetailedRoute.distance_km} km
+                          {activeDetailedRoute.distance_km} km
                         </strong>
                       </div>
                       <div className="route-stat-item">
                         <span className="stat-label">Driving Duration:</span>
                         <strong className="stat-val text-time">
-                          ⏱️ {activeDetailedRoute.travel_time_min} mins
+                          {activeDetailedRoute.travel_time_min} mins
                         </strong>
                       </div>
                       <div className="route-stat-item">
@@ -481,7 +481,7 @@ export default function HazardMap({
                 }}
               >
                 <Tooltip permanent direction="top" className="safeshift-tooltip">
-                  ⚠️ Origin: {activeDetailedRoute.from}
+                  Origin: {activeDetailedRoute.from}
                 </Tooltip>
               </CircleMarker>
 
@@ -500,7 +500,7 @@ export default function HazardMap({
                 }}
               >
                 <Tooltip permanent direction="top" className="safeshift-tooltip">
-                  🛡️ Safe Haven: {activeDetailedRoute.to}
+                  Safe Haven: {activeDetailedRoute.to}
                 </Tooltip>
               </CircleMarker>
             </>
@@ -535,14 +535,14 @@ export default function HazardMap({
                 }}
               >
                 <Tooltip permanent direction="bottom" className="safeshift-critical-shelter-tooltip">
-                  {isFull ? '⛔ FULL' : '🚨 90%+ CRITICAL'}: {sz.name}
+                  {isFull ? 'FULL' : '90%+ CRITICAL'}: {sz.name}
                 </Tooltip>
               </CircleMarker>
             </React.Fragment>
           );
         })}
 
-        {/* Multi-Route Alternative Corridors (Primary 🔵, Alt 1 🟢, Alt 2 🟡) */}
+        {/* Multi-Route Alternative Corridors */}
         {activeMultiRoutes && (
           <>
             {/* Primary Route */}
@@ -561,7 +561,7 @@ export default function HazardMap({
                 }}
               >
                 <Tooltip sticky direction="top" className="safeshift-route-tooltip">
-                  🔵 PRIMARY ROUTE: {activeMultiRoutes.primary.name} • {activeMultiRoutes.primary.distance_km} km • {activeMultiRoutes.primary.travel_time_min} mins
+                  PRIMARY ROUTE: {activeMultiRoutes.primary.name} • {activeMultiRoutes.primary.distance_km} km • {activeMultiRoutes.primary.travel_time_min} mins
                 </Tooltip>
               </Polyline>
             )}
@@ -571,7 +571,7 @@ export default function HazardMap({
               if (!alt.coordinates || alt.coordinates.length === 0) return null;
               const isSelected = selectedRouteId === alt.id;
               const altColor = aIdx === 0 ? '#10b981' : '#f59e0b';
-              const label = aIdx === 0 ? '🟢 ALTERNATE 1' : '🟡 ALTERNATE 2';
+              const label = aIdx === 0 ? 'ALTERNATE 1' : 'ALTERNATE 2';
 
               return (
                 <Polyline
@@ -613,7 +613,7 @@ export default function HazardMap({
         {activeMultiRoutes ? (
           <div className="active-multi-routes-bar">
             <span className="multi-routes-origin-tag">
-              🔄 Multi-Corridors: <strong>{activeMultiRoutes.origin?.name}</strong>
+              Multi-Corridors: <strong>{activeMultiRoutes.origin?.name}</strong>
             </span>
             <div className="multi-routes-selector-chips">
               <button
@@ -621,7 +621,7 @@ export default function HazardMap({
                 className={`route-chip chip-primary ${selectedRouteId === 'primary' ? 'chip-active' : ''}`}
                 onClick={() => onSelectMultiRouteChoice && onSelectMultiRouteChoice('primary', activeMultiRoutes.primary)}
               >
-                🔵 Primary ({activeMultiRoutes.primary?.distance_km} km)
+                Primary ({activeMultiRoutes.primary?.distance_km} km)
               </button>
               {activeMultiRoutes.alternates?.map((alt, idx) => (
                 <button
@@ -630,7 +630,7 @@ export default function HazardMap({
                   className={`route-chip ${idx === 0 ? 'chip-alt1' : 'chip-alt2'} ${selectedRouteId === alt.id ? 'chip-active' : ''}`}
                   onClick={() => onSelectMultiRouteChoice && onSelectMultiRouteChoice(alt.id, alt)}
                 >
-                  {idx === 0 ? '🟢 Alt 1' : '🟡 Alt 2'} ({alt.distance_km} km | {alt.travel_time_min}m)
+                  {idx === 0 ? 'Alt 1' : 'Alt 2'} ({alt.distance_km} km | {alt.travel_time_min}m)
                 </button>
               ))}
             </div>
@@ -640,13 +640,13 @@ export default function HazardMap({
               onClick={onClearMultiRoutes}
               title="Close Multi-Route View"
             >
-              ✕ Close
+              Close
             </button>
           </div>
         ) : activeDetailedRoute ? (
           <div className="active-route-banner">
             <span className="active-route-tag">
-              🛣️ Highway: <strong>{activeDetailedRoute.from}</strong> ➔{' '}
+              Highway: <strong>{activeDetailedRoute.from}</strong> to{' '}
               <strong>{activeDetailedRoute.to}</strong> ({activeDetailedRoute.distance_km} km |{' '}
               {activeDetailedRoute.travel_time_min} min)
             </span>
@@ -656,7 +656,7 @@ export default function HazardMap({
               onClick={onClearDetailedRoute}
               title="Return to National Corridor View"
             >
-              ✕ Clear Route
+              Clear Route
             </button>
           </div>
         ) : (
@@ -666,7 +666,7 @@ export default function HazardMap({
             onClick={() => setShowCorridors(!showCorridors)}
             title="Toggle Evacuation Corridors on/off"
           >
-            {showCorridors ? '🛣️ Corridors Visible' : '🛣️ Corridors Hidden'}
+            {showCorridors ? 'Corridors Visible' : 'Corridors Hidden'}
           </button>
         )}
       </div>

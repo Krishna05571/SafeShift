@@ -152,7 +152,7 @@ export default function SmartAlertBanner({
             <span className="alert-zone-title">{primaryAlert.zone}</span>
             <span className="alert-divider-dot">•</span>
             <span className="alert-trigger-snippet" title={primaryAlert.trigger}>
-              {primaryAlert.hazardType === 'landslide' ? '⛰️' : '🌊'} {primaryAlert.trigger}
+              [{primaryAlert.hazardType?.toUpperCase() || 'HAZARD'}] {primaryAlert.trigger}
             </span>
           </div>
 
@@ -181,7 +181,7 @@ export default function SmartAlertBanner({
             title="Expand to view all active multi-hazard alerts"
           >
             <span>{isExpanded ? 'Collapse' : 'View All Alerts'}</span>
-            <span className={`chevron-icon ${isExpanded ? 'rotated' : ''}`}>▾</span>
+            <span className={`chevron-icon ${isExpanded ? 'rotated' : ''}`}>▼</span>
           </button>
 
           <button
@@ -191,7 +191,7 @@ export default function SmartAlertBanner({
             title="Dismiss alert notification"
             aria-label="Dismiss alert"
           >
-            ✕
+            x
           </button>
         </div>
       </div>
@@ -211,7 +211,7 @@ export default function SmartAlertBanner({
               className="drawer-close-btn"
               onClick={() => setIsExpanded(false)}
             >
-              Close ✕
+              Close
             </button>
           </div>
 
@@ -224,7 +224,7 @@ export default function SmartAlertBanner({
               >
                 <div className="card-top-row">
                   <div className="card-zone-heading">
-                    {item.isPinned && <span className="pin-icon" title="Pinned High-Priority">📌</span>}
+                    {item.isPinned && <span className="pin-icon" title="Pinned High-Priority">[PINNED]</span>}
                     <strong className="card-zone-name">{item.zone}</strong>
                   </div>
                   <span
@@ -246,7 +246,7 @@ export default function SmartAlertBanner({
 
                 <div className="card-action-row">
                   <div className="action-text-wrap">
-                    <span className="action-bullet">➔</span>
+                    <span className="action-bullet">Action:</span>
                     <span className="action-text">{item.action}</span>
                   </div>
 

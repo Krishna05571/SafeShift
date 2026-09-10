@@ -169,7 +169,7 @@ export const createPopupContent = (properties = {}, riskMode = 'baseline') => {
         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
           <strong style="color: #64748b;">Category:</strong>
           <span style="text-transform: capitalize; font-weight: 600; color: #334155;">
-            ${isSafe ? '🛡️ Relocation Site' : `⚠️ ${hazardType}`}
+            ${isSafe ? 'Relocation Site' : hazardType}
           </span>
         </div>
 
@@ -204,7 +204,7 @@ export const createPopupContent = (properties = {}, riskMode = 'baseline') => {
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 9.5px; color: #64748b;">
                 <span>Remaining: <strong>${remainingCap ? remainingCap.toLocaleString() : '--'}</strong></span>
-                ${estMins !== null && estMins > 0 ? `<span style="color: #d97706; font-weight: 600;">⏱️ Full in ~${estMins}m</span>` : ''}
+                ${estMins !== null && estMins > 0 ? `<span style="color: #d97706; font-weight: 600;">Full in ~${estMins}m</span>` : ''}
               </div>
             </div>`
             : ''
@@ -213,7 +213,7 @@ export const createPopupContent = (properties = {}, riskMode = 'baseline') => {
         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
           <strong style="color: #64748b;">Mode View:</strong>
           <span style="font-weight: 700; color: ${riskMode === 'live' ? '#0284c7' : '#64748b'};">
-            ${riskMode === 'live' ? '🌦️ Live Predicted Risk' : '📊 Baseline Terrain Risk'}
+            ${riskMode === 'live' ? 'Live Predicted Risk' : 'Baseline Terrain Risk'}
           </span>
         </div>
 
@@ -222,14 +222,14 @@ export const createPopupContent = (properties = {}, riskMode = 'baseline') => {
             ? `
             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #cbd5e1; background: #f8fafc; padding: 6px 8px; border-radius: 6px;">
               <div style="font-weight: 700; font-size: 10.5px; color: #0369a1; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between;">
-                <span>🌦️ Live Meteorological Feed</span>
+                <span>Live Meteorological Feed</span>
                 <span style="font-size: 8.5px; background: #e0f2fe; color: #0284c7; padding: 1px 4px; border-radius: 4px;">Open-Meteo</span>
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 10.5px;">
-                <div>🌧️ <strong>${rainfall} mm</strong></div>
-                <div>💧 <strong>${humidity ?? '--'}%</strong> hum</div>
-                <div>🌡️ <strong>${temp ?? '--'}°C</strong></div>
-                <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #475569;" title="${weatherDesc || 'Live'}">⛅ ${weatherDesc || 'Rain'}</div>
+                <div>Rain: <strong>${rainfall} mm</strong></div>
+                <div>Humidity: <strong>${humidity ?? '--'}%</strong></div>
+                <div>Temp: <strong>${temp ?? '--'}°C</strong></div>
+                <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #475569;" title="${weatherDesc || 'Live'}">Conditions: ${weatherDesc || 'Rain'}</div>
               </div>
             </div>`
             : ''

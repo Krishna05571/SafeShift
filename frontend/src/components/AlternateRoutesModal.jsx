@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 /**
  * Alternate Safe Haven & Multi-Route Selection Modal
- * Displays Primary (🔵), Alternate 1 (🟢), and Alternate 2 (🟡) with Google Maps ETAs and live capacity
+ * Displays Primary, Alternate 1, and Alternate 2 with Google Maps ETAs and live capacity
  */
 export default function AlternateRoutesModal({
   multiRoutesData,
@@ -41,7 +41,6 @@ export default function AlternateRoutesModal({
         {/* Header */}
         <div className="modal-header">
           <div className="modal-title-wrap">
-            <span className="modal-header-icon">🔄</span>
             <div>
               <h3 className="modal-title">Evacuation Corridors & Alternate Safe Havens</h3>
               <p className="modal-subtitle">
@@ -50,14 +49,13 @@ export default function AlternateRoutesModal({
             </div>
           </div>
           <button type="button" className="modal-close-btn" onClick={onClose}>
-            ✕
+            Close
           </button>
         </div>
 
         {/* Modal Body */}
         <div className="alt-routes-body">
           <div className="alt-routes-guidance-banner">
-            <span className="guidance-icon">💡</span>
             <span>
               Compare live road distance, Google Maps travel time, and remaining shelter headroom.
               Select an alternative corridor to reroute evacuees instantly.
@@ -91,11 +89,11 @@ export default function AlternateRoutesModal({
                         className="route-type-label"
                         style={{ color: route.color }}
                       >
-                        {isPrimary ? '🔵 PRIMARY CORRIDOR' : idx === 1 ? '🟢 ALTERNATE 1' : '🟡 ALTERNATE 2'}
+                        {isPrimary ? 'PRIMARY CORRIDOR' : idx === 1 ? 'ALTERNATE 1' : 'ALTERNATE 2'}
                       </span>
                     </div>
 
-                    {isSelected && <span className="active-selection-pill">✓ SELECTED</span>}
+                    {isSelected && <span className="active-selection-pill">SELECTED</span>}
                   </div>
 
                   <h4 className="route-dest-name">{route.name}</h4>
@@ -104,12 +102,12 @@ export default function AlternateRoutesModal({
                   <div className="route-metrics-grid">
                     <div className="route-metric-box">
                       <span className="m-label">Distance</span>
-                      <strong className="m-val">📍 {route.distance_km} km</strong>
+                      <strong className="m-val">{route.distance_km} km</strong>
                     </div>
 
                     <div className="route-metric-box">
                       <span className="m-label">Est. Duration</span>
-                      <strong className="m-val text-time">⏱️ {route.travel_time_min} mins</strong>
+                      <strong className="m-val text-time">{route.travel_time_min} mins</strong>
                     </div>
 
                     <div className="route-metric-box">
@@ -117,7 +115,7 @@ export default function AlternateRoutesModal({
                       <strong
                         className={`m-val ${isCritical ? 'text-danger' : isWarning ? 'text-warning' : 'text-success'}`}
                       >
-                        🛡️ {route.remaining_capacity?.toLocaleString()} / {route.total_capacity?.toLocaleString()}
+                        {route.remaining_capacity?.toLocaleString()} / {route.total_capacity?.toLocaleString()}
                       </strong>
                     </div>
                   </div>
@@ -126,7 +124,7 @@ export default function AlternateRoutesModal({
                   <div className="route-capacity-bar-wrap">
                     <div className="route-cap-info">
                       <span className="cap-pct-text">Occupancy: {fillPct}%</span>
-                      {isCritical && <span className="cap-critical-tag">⚠️ Near Capacity</span>}
+                      {isCritical && <span className="cap-critical-tag">Near Capacity</span>}
                     </div>
                     <div className="cap-track">
                       <div
@@ -169,7 +167,7 @@ export default function AlternateRoutesModal({
               Cancel
             </button>
             <button type="button" className="btn-modal-apply" onClick={handleApply}>
-              🚀 Confirm & Activate Route
+              Confirm & Activate Route
             </button>
           </div>
         </div>

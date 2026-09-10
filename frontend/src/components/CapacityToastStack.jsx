@@ -36,7 +36,7 @@ export default function CapacityToastStack({
           onClick={() => setCollapsed(!collapsed)}
           title={collapsed ? 'Expand alerts' : 'Collapse stack'}
         >
-          {collapsed ? '▲ Expand' : '▼ Minimize'}
+          {collapsed ? 'Expand' : 'Minimize'}
         </button>
       </div>
 
@@ -55,9 +55,6 @@ export default function CapacityToastStack({
               >
                 <div className="toast-card-top">
                   <div className="toast-zone-group">
-                    <span className="toast-status-icon">
-                      {isFull ? '⛔' : isCritical ? '🚨' : '⚠️'}
-                    </span>
                     <strong className="toast-zone-name">{alert.zone_name}</strong>
                   </div>
 
@@ -78,7 +75,7 @@ export default function CapacityToastStack({
                     onClick={(e) => handleDismiss(alert.id || alert.zone_name, e)}
                     title="Dismiss alert"
                   >
-                    ✕
+                    ×
                   </button>
                 </div>
 
@@ -90,7 +87,7 @@ export default function CapacityToastStack({
                   </span>
                   {alert.estimated_minutes_to_full !== null && alert.estimated_minutes_to_full > 0 && (
                     <span className="toast-eta">
-                      ⏱️ Full in ~{alert.estimated_minutes_to_full} mins
+                      Full in ~{alert.estimated_minutes_to_full} mins
                     </span>
                   )}
                 </div>
@@ -122,7 +119,7 @@ export default function CapacityToastStack({
                       }
                     }}
                   >
-                    🔄 View Alternate Routes
+                    View Alternate Routes
                   </button>
 
                   <button
@@ -139,7 +136,7 @@ export default function CapacityToastStack({
                       }
                     }}
                   >
-                    📍 Locate
+                    Locate
                   </button>
                 </div>
               </div>

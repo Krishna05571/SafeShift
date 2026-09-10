@@ -179,8 +179,8 @@ export default function SafeZoneCapacityPage({
           <div className="hero-title-group">
             <div className="hero-badge-row">
               <span className="live-radar-dot" />
-              <h2>🛡️ Live Safe Zone Capacity & Evacuation Rerouting Center</h2>
-              <span className="live-sync-badge">⏱️ Live Influx Active (4s Sync)</span>
+              <h2>Live Safe Zone Capacity & Evacuation Rerouting Center</h2>
+              <span className="live-sync-badge">Live Influx Active (4s Sync)</span>
             </div>
             <p className="hero-subtitle">
               Monitor real-time shelter bed utilization, predict saturation horizons, and autonomously reroute evacuees when safe havens reach peak capacity.
@@ -190,7 +190,6 @@ export default function SafeZoneCapacityPage({
           <div className="hero-controls-group">
             <div className="auto-reroute-card">
               <div className="auto-reroute-header">
-                <span className="auto-icon">⚡</span>
                 <span className="auto-label">Auto-Rerouting (≥90% Load):</span>
               </div>
               <button
@@ -199,7 +198,7 @@ export default function SafeZoneCapacityPage({
                 onClick={onToggleAutoReroute}
                 title="Automatically redirect incoming disaster victims to the nearest alternative haven when a shelter reaches 90% capacity"
               >
-                {autoRerouteEnabled ? '✓ ENABLED (Autonomous)' : 'MANUAL DISPATCH'}
+                {autoRerouteEnabled ? 'ENABLED (Autonomous)' : 'MANUAL DISPATCH'}
               </button>
             </div>
 
@@ -210,7 +209,7 @@ export default function SafeZoneCapacityPage({
                 onClick={onResetCapacitySimulation}
                 title="Reset live occupancy simulation back to baseline"
               >
-                🔄 Reset Simulation
+                Reset Simulation
               </button>
             )}
           </div>
@@ -219,7 +218,6 @@ export default function SafeZoneCapacityPage({
         {/* 4 Summary KPI Cards */}
         <div className="capacity-kpi-grid">
           <div className="cap-kpi-card">
-            <span className="cap-kpi-icon">🏨</span>
             <div className="cap-kpi-info">
               <span className="cap-kpi-label">Designated Shelters</span>
               <strong className="cap-kpi-val">{summary.total_shelters || safeZonesList.length}</strong>
@@ -228,7 +226,6 @@ export default function SafeZoneCapacityPage({
           </div>
 
           <div className="cap-kpi-card">
-            <span className="cap-kpi-icon">🛏️</span>
             <div className="cap-kpi-info">
               <span className="cap-kpi-label">Total Shelter Capacity</span>
               <strong className="cap-kpi-val">{(summary.total_capacity || 0).toLocaleString()}</strong>
@@ -237,7 +234,6 @@ export default function SafeZoneCapacityPage({
           </div>
 
           <div className="cap-kpi-card">
-            <span className="cap-kpi-icon">👥</span>
             <div className="cap-kpi-info">
               <span className="cap-kpi-label">Current Occupancy</span>
               <strong className="cap-kpi-val text-blue">
@@ -250,9 +246,6 @@ export default function SafeZoneCapacityPage({
           </div>
 
           <div className="cap-kpi-card">
-            <span className="cap-kpi-icon">
-              {reroutedCount > 0 ? '⚡' : (counts.critical + counts.full) > 0 ? '🚨' : '🟢'}
-            </span>
             <div className="cap-kpi-info">
               <span className="cap-kpi-label">Auto-Rerouted Corridors</span>
               <strong className={`cap-kpi-val ${reroutedCount > 0 ? 'text-green' : (counts.critical + counts.full) > 0 ? 'text-danger' : 'text-success'}`}>
@@ -295,14 +288,14 @@ export default function SafeZoneCapacityPage({
           className={`sec-tab-btn ${activeSection === 'all' || activeSection === 'relocations' ? 'active' : ''}`}
           onClick={() => setActiveSection(activeSection === 'relocations' ? 'all' : 'relocations')}
         >
-          ⚡ Autonomous Relocations & Rerouting Matrix ({activeEvacuations.length} Corridors)
+          Autonomous Relocations & Rerouting Matrix ({activeEvacuations.length} Corridors)
         </button>
         <button
           type="button"
           className={`sec-tab-btn ${activeSection === 'shelters' ? 'active' : ''}`}
           onClick={() => setActiveSection('shelters')}
         >
-          🏨 Shelter Capacity Cards ({safeZonesList.length} Havens)
+          Shelter Capacity Cards ({safeZonesList.length} Havens)
         </button>
       </div>
 
@@ -311,7 +304,6 @@ export default function SafeZoneCapacityPage({
         <div className="auto-relocation-section">
           <div className="auto-section-header">
             <div className="auto-sec-title-wrap">
-              <span className="auto-sec-icon">⚡</span>
               <div>
                 <h3 className="auto-sec-title">Live Evacuation Relocations & Autonomous Rerouting Status</h3>
                 <p className="auto-sec-desc">
@@ -321,7 +313,7 @@ export default function SafeZoneCapacityPage({
             </div>
             {autoRerouteEnabled && reroutedCount > 0 && (
               <span className="auto-reroute-active-tag">
-                ✓ {reroutedCount} Evacuation Corridors Autonomously Rerouted
+                {reroutedCount} Evacuation Corridors Autonomously Rerouted
               </span>
             )}
           </div>
@@ -358,7 +350,7 @@ export default function SafeZoneCapacityPage({
                         className={evac.isAutoRerouted ? 'row-auto-rerouted' : evac.status === 'CRITICAL' ? 'row-warning' : ''}
                       >
                         <td className="font-semibold text-main">
-                          📍 {evac.from}
+                          {evac.from}
                         </td>
                         <td>
                           <span className={`risk-pill ${riskBadgeClass}`}>
@@ -366,10 +358,10 @@ export default function SafeZoneCapacityPage({
                           </span>
                         </td>
                         <td className="font-bold text-blue">
-                          👥 {(evac.people || 0).toLocaleString()}
+                          {(evac.people || 0).toLocaleString()}
                         </td>
                         <td>
-                          <span className="shelter-name-text">🛡️ {evac.originalDest}</span>
+                          <span className="shelter-name-text">{evac.originalDest}</span>
                         </td>
                         <td>
                           <div className="table-load-cell">
@@ -395,16 +387,16 @@ export default function SafeZoneCapacityPage({
                         <td>
                           {evac.isAutoRerouted ? (
                             <div className="reroute-destination-tag">
-                              <span className="reroute-badge">⚡ AUTONOMOUSLY REROUTED</span>
-                              <strong className="rerouted-name">➔ {evac.effectiveDest}</strong>
+                              <span className="reroute-badge">AUTONOMOUSLY REROUTED</span>
+                              <strong className="rerouted-name">To: {evac.effectiveDest}</strong>
                               <span className="reroute-subtext">
                                 Headroom: {evac.reroutedHaven?.remaining_capacity?.toLocaleString()} beds ({evac.reroutedHaven?.fill_percentage}% load)
                               </span>
                             </div>
                           ) : (
                             <div className="direct-route-tag">
-                              <span className="direct-badge">🟢 DIRECT DISPATCH</span>
-                              <span className="direct-name">➔ {evac.originalDest}</span>
+                              <span className="direct-badge">DIRECT DISPATCH</span>
+                              <span className="direct-name">To: {evac.originalDest}</span>
                             </div>
                           )}
                         </td>
@@ -426,7 +418,7 @@ export default function SafeZoneCapacityPage({
                               }}
                               title="Inspect evacuation highway corridor on map"
                             >
-                              🛣️ Map
+                              Map
                             </button>
 
                             <button
@@ -445,7 +437,7 @@ export default function SafeZoneCapacityPage({
                               }}
                               title="Explore alternate corridors and multi-routes"
                             >
-                              🔄 Alts
+                              Alts
                             </button>
                           </div>
                         </td>
@@ -476,28 +468,28 @@ export default function SafeZoneCapacityPage({
                 className={`status-pill-btn pill-btn-safe ${statusFilter === 'safe' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('safe')}
               >
-                🟢 Safe &lt;70% ({counts.safe})
+                Safe &lt;70% ({counts.safe})
               </button>
               <button
                 type="button"
                 className={`status-pill-btn pill-btn-warning ${statusFilter === 'warning' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('warning')}
               >
-                🟡 Warning 70-90% ({counts.warning})
+                Warning 70-90% ({counts.warning})
               </button>
               <button
                 type="button"
                 className={`status-pill-btn pill-btn-critical ${statusFilter === 'critical' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('critical')}
               >
-                🔴 Critical &gt;90% ({counts.critical})
+                Critical &gt;90% ({counts.critical})
               </button>
               <button
                 type="button"
                 className={`status-pill-btn pill-btn-full ${statusFilter === 'full' ? 'active' : ''}`}
                 onClick={() => setStatusFilter('full')}
               >
-                ⛔ Full 100% ({counts.full})
+                Full 100% ({counts.full})
               </button>
             </div>
 
@@ -505,7 +497,7 @@ export default function SafeZoneCapacityPage({
               <input
                 type="text"
                 className="shelter-search-input"
-                placeholder="🔍 Search shelter by name or type..."
+                placeholder="Search shelter by name or type..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -534,7 +526,7 @@ export default function SafeZoneCapacityPage({
                   >
                     <div className="op-card-header">
                       <div className="op-name-wrap">
-                        <span className="op-type-tag">🛡️ {sz.location_type || 'Relocation Haven'}</span>
+                        <span className="op-type-tag">{sz.location_type || 'Relocation Haven'}</span>
                         <h4 className="op-shelter-title">{sz.name}</h4>
                       </div>
 
@@ -546,7 +538,7 @@ export default function SafeZoneCapacityPage({
                           borderColor: `${statusColor}40`,
                         }}
                       >
-                        {isFull ? '⛔ 100% FULL' : isCritical ? '🚨 CRITICAL' : isWarning ? '⚠️ WARNING' : '🟢 SAFE'}
+                        {isFull ? '100% FULL' : isCritical ? 'CRITICAL' : isWarning ? 'WARNING' : 'SAFE'}
                       </span>
                     </div>
 
@@ -586,7 +578,6 @@ export default function SafeZoneCapacityPage({
                     {/* Predictive Fill Countdown Banner */}
                     {sz.estimated_minutes_to_full !== null && (
                       <div className={`op-predictive-banner ${isCritical || isFull ? 'banner-urgent' : ''}`}>
-                        <span className="predictive-clock">⏱️</span>
                         <span>
                           {isFull
                             ? 'Capacity Exhausted — Diverting all evacuees to alternate havens'
@@ -612,7 +603,7 @@ export default function SafeZoneCapacityPage({
                           }
                         }}
                       >
-                        🔄 View Alternate Corridors
+                        View Alternate Corridors
                       </button>
 
                       <button
@@ -629,7 +620,7 @@ export default function SafeZoneCapacityPage({
                           }
                         }}
                       >
-                        📍 Locate
+                        Locate
                       </button>
                     </div>
                   </div>

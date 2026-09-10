@@ -45,7 +45,6 @@ export default function ZoneDetailsModal({
     <aside className="zone-details-panel" aria-label="Zone Details Panel">
       <div className="panel-header">
         <div className="panel-title-wrap">
-          <span className="panel-badge-icon">{isSafe ? '🛡️' : '⚠️'}</span>
           <div>
             <h3>{zone.area_name || 'Zone Details'}</h3>
             <span className="panel-subtitle">
@@ -61,7 +60,7 @@ export default function ZoneDetailsModal({
           onClick={onClose}
           aria-label="Close details"
         >
-          ✕
+          Close
         </button>
       </div>
 
@@ -124,7 +123,7 @@ export default function ZoneDetailsModal({
           <div className="panel-weather-card">
             <div className="weather-card-header">
               <div className="weather-card-title">
-                <span>🌦️ Live Meteorological Feed</span>
+                <span>Live Meteorological Feed</span>
               </div>
               <span className="weather-live-tag">Open-Meteo</span>
             </div>
@@ -133,25 +132,25 @@ export default function ZoneDetailsModal({
               <div className="weather-stat-box">
                 <span className="weather-stat-label">Accumulated Rain</span>
                 <strong className={`weather-stat-val ${rainfall > 80 ? 'text-rain-heavy' : 'text-rain-mod'}`}>
-                  🌧️ {rainfall} mm
+                  {rainfall} mm
                 </strong>
               </div>
               <div className="weather-stat-box">
                 <span className="weather-stat-label">Relative Humidity</span>
                 <strong className="weather-stat-val text-humidity">
-                  💧 {humidity ?? '--'}%
+                  {humidity ?? '--'}%
                 </strong>
               </div>
               <div className="weather-stat-box">
                 <span className="weather-stat-label">Ambient Temp</span>
                 <strong className="weather-stat-val text-temp">
-                  🌡️ {temp ?? '--'}°C
+                  {temp ?? '--'}°C
                 </strong>
               </div>
               <div className="weather-stat-box">
                 <span className="weather-stat-label">Conditions</span>
                 <strong className="weather-stat-val text-condition" title={weather || 'Normal'}>
-                  ⛅ {weather || 'Normal'}
+                  {weather || 'Normal'}
                 </strong>
               </div>
             </div>
@@ -175,13 +174,13 @@ export default function ZoneDetailsModal({
         {!isSafe && matchedRoute && (
           <div className="panel-route-card">
             <div className="route-card-title">
-              <span>🛡️ Assigned Safe Haven</span>
+              <span>Assigned Safe Haven</span>
             </div>
             <strong className="route-dest-name">{matchedRoute.to}</strong>
             <div className="route-quick-stats">
-              <span>👥 {matchedRoute.people?.toLocaleString()} Evacuees</span>
+              <span>{matchedRoute.people?.toLocaleString()} Evacuees</span>
               <span>•</span>
-              <span>⏱️ {matchedRoute.travel_time_min ? `${matchedRoute.travel_time_min} mins` : 'N/A'}</span>
+              <span>{matchedRoute.travel_time_min ? `${matchedRoute.travel_time_min} mins` : 'N/A'}</span>
             </div>
 
             {/* On-Demand Curved Road Route Action */}
@@ -193,11 +192,11 @@ export default function ZoneDetailsModal({
                   onClick={() => onTraceRoute && onTraceRoute(matchedRoute)}
                   disabled={loadingRoute}
                 >
-                  {loadingRoute ? '⏳ Tracing Highway...' : '🛣️ Trace Highway Route'}
+                  {loadingRoute ? 'Tracing Highway...' : 'Trace Highway Route'}
                 </button>
               ) : (
                 <div className="active-route-btn-group">
-                  <span className="route-active-indicator">✓ Highway Active</span>
+                  <span className="route-active-indicator">Highway Active</span>
                   <button
                     type="button"
                     className="btn-clear-route"
@@ -212,7 +211,7 @@ export default function ZoneDetailsModal({
         )}
 
         <div className="action-box">
-          <h4>🚨 Decision Support System Action</h4>
+          <h4>Decision Support System Action</h4>
           <p>
             {isSafe
               ? 'This zone is operational and designated to receive evacuees from immediate high-priority zones.'
