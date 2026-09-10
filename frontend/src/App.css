@@ -1148,6 +1148,9 @@
 }
 
 .distance-badge {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
   padding: 3px 8px;
   border-radius: 6px;
   font-size: 11px;
@@ -1164,10 +1167,15 @@
 }
 
 .time-badge {
-  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  padding: 4px 10px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
+  min-width: fit-content;
 }
 
 .dark-theme .time-badge {

@@ -59,13 +59,12 @@ export default function RelocationTable({ relocationPlan = [] }) {
               <th>People Relocated</th>
               <th>Road Distance</th>
               <th>Est. Travel Time</th>
-              <th>Status</th>
             </tr>
           </thead>
           <tbody>
             {filteredPlan.length === 0 ? (
               <tr>
-                <td colSpan="9" className="table-empty">
+                <td colSpan="8" className="table-empty">
                   No relocation records found.
                 </td>
               </tr>
@@ -120,11 +119,6 @@ export default function RelocationTable({ relocationPlan = [] }) {
                     <td>
                       <span className="time-badge font-mono">
                         {item.travel_time_min ? `⏱️ ${item.travel_time_min} min` : 'N/A'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="status-badge-optimal">
-                        ✓ Optimal Match
                       </span>
                     </td>
                   </tr>
