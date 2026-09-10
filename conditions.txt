@@ -1,0 +1,27 @@
+floods :
+rainfall                  risk
+ 
+r<100mm                   high
+
+r>=50 && r<=100           medium
+
+r<50                       low
+
+landslides :
+rainfall                  risk
+ 
+r<80mm                   high
+
+r>40 && r<=80           medium
+
+r<40                     low
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+⏳ Disaster Warning Horizons & Accuracy Breakdown
+
+| Lead Time | Prediction Horizon | Meteorological Mechanism | Accuracy Level | Action Triggered in SafeShift |
+| :--- | :--- | :--- | :--- | :--- |
+| **0 to 6 Hours** | Nowcasting / Immediate Alert | Radar Doppler reflectivity, hourly rain-rate accumulation (>50 mm/h), flash-flood runoff | **95% – 99%** | 🚨 **Immediate Evacuation Dispatch**: Sound sirens, trigger highway corridors, lock shelters. |
+| **1 to 3 Days** (24 – 72 Hours) | Short-Range Flood & Landslide Warning | High-resolution Numerical Weather Prediction (NWP) models (HRRR, ECMWF IFS 0.1°), 24h accumulated precipitation (>100 mm) | **85% – 92%** | ⚠️ **Pre-Emptive Evacuation & Transit Staging**: Pre-allocate buses, clear high-risk highway bottlenecks, alert disaster response teams (NDRF/SDRF). |
+| **3 to 7 Days** (72 – 168 Hours) | Medium-Range Early Warning Outlook | Global Ensemble Forecast Systems (GEFS, ECMWF 7-day daily precipitation sum), low-pressure depression tracking, monsoon trough shifts | **70% – 80%** | 📊 **Resource & Shelter Preparation**: Stock relief shelters with rations, prepare hospital beds, inspect dam discharge levels. |
+------------------------------------------------------------------------------------------------------------------------------------------------------

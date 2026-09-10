@@ -6,6 +6,10 @@ import DashboardPanel from './components/DashboardPanel';
 import SimulationController from './components/SimulationController';
 import CommandCenterEntry from './components/CommandCenterEntry';
 import SafeShiftLogo from './components/SafeShiftLogo';
+import SmartAlertBanner from './components/SmartAlertBanner';
+import CapacityToastStack from './components/CapacityToastStack';
+import AlternateRoutesModal from './components/AlternateRoutesModal';
+import SafeZoneCapacityPage from './components/SafeZoneCapacityPage';
 import './App.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
@@ -16,12 +20,25 @@ function App() {
 
   const [geoData, setGeoData] = useState(null);
   const [relocationPlan, setRelocationPlan] = useState([]);
+  const [weatherMeta, setWeatherMeta] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshingWeather, setIsRefreshingWeather] = useState(false);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'map' | 'split'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'capacity' | 'map' | 'split'
   const [selectedFilters, setSelectedFilters] = useState(['all']); // Multi-select filter layer
+
   const [selectedZone, setSelectedZone] = useState(null);
+  const [locateTarget, setLocateTarget] = useState(null);
   const [theme, setTheme] = useState('light'); // 'light' (default bright) | 'dark'
+  const [riskMode, setRiskMode] = useState('baseline'); // 'baseline' (historical vulnerability red/yellow/orange) | 'live' (weather predicted)
+  const [dismissedAlerts, setDismissedAlerts] = useState(false);
+
+  // Safe Zone Live Capacity & Alternate Routing State
+  const [safeZoneStatus, setSafeZoneStatus] = useState(null);
+  const [autoRerouteEnabled, setAutoRerouteEnabled] = useState(true);
+  const [activeMultiRoutes, setActiveMultiRoutes] = useState(null);
+  const [selectedMultiRouteChoice, setSelectedMultiRouteChoice] = useState('primary');
+  const [showAltRoutesModal, setShowAltRoutesModal] = useState(false);
 
   // Disaster Simulation State
   const [simTimeStep, setSimTimeStep] = useState(0);
@@ -33,18 +50,164 @@ function App() {
   const [activeDetailedRoute, setActiveDetailedRoute] = useState(null);
   const [loadingRoute, setLoadingRoute] = useState(false);
 
-  // Fetch both /zones and /relocation-plan from FastAPI backend
-  const fetchAllData = async () => {
-    setLoading(true);
+  // Explicit Zone Location Action (Zooms on map when Locate on Map / Inspect Zone is clicked)
+  const handleLocateZone = (zoneProps) => {
+    if (!zoneProps) return;
+    setSelectedZone(zoneProps);
+    setLocateTarget({
+      zone: zoneProps,
+      timestamp: Date.now(),
+    });
+    if (activeTab === 'dashboard') {
+      setActiveTab('map');
+    }
+  };
+
+  // Fetch Safe Zone Real-Time Status & Influx Simulation
+  const fetchSafeZoneStatus = useCallback(async (autoTick = true) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/safezones/status?auto_tick=${autoTick}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSafeZoneStatus(data);
+      }
+    } catch (err) {
+      console.warn('Could not sync safe zone capacity:', err);
+    }
+  }, []);
+
+  // Reset Capacity Simulation
+  const handleResetCapacitySimulation = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/safezones/update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reset: true }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSafeZoneStatus(data);
+      }
+    } catch (err) {
+      console.warn('Could not reset safe zone capacities:', err);
+    }
+  };
+
+  // Trigger Multi-Route Alternate Finder
+  const handleViewAlternateRoutes = async (targetInfo) => {
+    if (!targetInfo) return;
+
+    // Find origin hazard zone or match
+    let originZone = null;
+    let matchedPlan = relocationPlan.find((p) => p.to === targetInfo.name);
+
+    if (matchedPlan) {
+      originZone = {
+        name: matchedPlan.from,
+        lat: matchedPlan.origin_coords ? matchedPlan.origin_coords[0] : targetInfo.lat,
+        lon: matchedPlan.origin_coords ? matchedPlan.origin_coords[1] : targetInfo.lon,
+      };
+    } else if (geoData?.features) {
+      const hazardFeat = geoData.features.find((f) => !f.properties?.safe);
+      if (hazardFeat && hazardFeat.geometry) {
+        const p = hazardFeat.properties || {};
+        originZone = {
+          name: p.area_name || 'Active Hazard Zone',
+          lat: p.centroid_lat || 20.59,
+          lon: p.centroid_lon || 78.96,
+        };
+      }
+    }
+
+    const oLat = originZone?.lat || 28.61;
+    const oLon = originZone?.lon || 77.20;
+    const oName = originZone?.name || 'Hazard Origin';
+    const dLat = targetInfo.lat || 28.70;
+    const dLon = targetInfo.lon || 77.10;
+    const dName = targetInfo.name || 'Safe Haven';
+
+    try {
+      setLoadingRoute(true);
+      const url = `${API_BASE_URL}/safezones/multi-routes?origin_lat=${oLat}&origin_lon=${oLon}&origin_name=${encodeURIComponent(oName)}&dest_lat=${dLat}&dest_lon=${dLon}&dest_name=${encodeURIComponent(dName)}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        setActiveMultiRoutes(data);
+        setSelectedMultiRouteChoice('primary');
+        setShowAltRoutesModal(true);
+        if (activeTab === 'dashboard') {
+          setActiveTab('map');
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching multi-routes:', err);
+    } finally {
+      setLoadingRoute(false);
+    }
+  };
+
+  // Switch Active Corridor
+  const handleSelectMultiRouteChoice = (choiceId, routeObj) => {
+    setSelectedMultiRouteChoice(choiceId);
+    if (routeObj) {
+      setActiveDetailedRoute({
+        coordinates: routeObj.coordinates,
+        distance_km: routeObj.distance_km,
+        travel_time_min: routeObj.travel_time_min,
+        from: activeMultiRoutes?.origin?.name || 'Hazard Origin',
+        to: routeObj.name,
+        source: routeObj.source || 'Google Maps Traffic',
+      });
+    }
+  };
+
+  // Confirm and Apply Reroute in Relocation Plan
+  const handleApplyReroute = (selectedRoute) => {
+    if (!selectedRoute || !activeMultiRoutes) return;
+
+    const fromName = activeMultiRoutes.origin?.name;
+    const toName = selectedRoute.name;
+
+    setRelocationPlan((prevPlan) =>
+      prevPlan.map((item) => {
+        if (item.from === fromName) {
+          return {
+            ...item,
+            to: toName,
+            dest_coords: selectedRoute.dest_coords || item.dest_coords,
+            distance_km: selectedRoute.distance_km,
+            travel_time_min: selectedRoute.travel_time_min,
+            routing_source: selectedRoute.source,
+          };
+        }
+        return item;
+      })
+    );
+
+    setActiveDetailedRoute({
+      coordinates: selectedRoute.coordinates,
+      distance_km: selectedRoute.distance_km,
+      travel_time_min: selectedRoute.travel_time_min,
+      from: fromName,
+      to: toName,
+      source: selectedRoute.source || 'Google Maps Directions',
+    });
+  };
+
+  // Fetch both /zones/live and /relocation-plan?live=true from FastAPI backend
+  const fetchAllData = async (forceRefresh = false) => {
+    if (forceRefresh) setIsRefreshingWeather(true);
+    else if (!geoData) setLoading(true);
     setError(null);
     try {
+      const refreshQuery = forceRefresh ? '?refresh=true' : '';
       const [zonesRes, planRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/zones`),
-        fetch(`${API_BASE_URL}/relocation-plan`),
+        fetch(`${API_BASE_URL}/zones/live${refreshQuery}`),
+        fetch(`${API_BASE_URL}/relocation-plan?live=true`),
       ]);
 
       if (!zonesRes.ok) {
-        throw new Error(`Failed to fetch /zones (Status ${zonesRes.status})`);
+        throw new Error(`Failed to fetch /zones/live (Status ${zonesRes.status})`);
       }
       if (!planRes.ok) {
         throw new Error(`Failed to fetch /relocation-plan (Status ${planRes.status})`);
@@ -54,6 +217,7 @@ function App() {
       const planData = await planRes.json();
 
       setGeoData(zonesData);
+      setWeatherMeta(zonesData.metadata || null);
       setRelocationPlan(planData);
     } catch (err) {
       console.error('Error fetching backend APIs:', err);
@@ -62,12 +226,30 @@ function App() {
       );
     } finally {
       setLoading(false);
+      setIsRefreshingWeather(false);
     }
   };
 
   useEffect(() => {
-    fetchAllData();
-  }, []);
+    fetchAllData(false);
+    fetchSafeZoneStatus(false);
+
+    // Live capacity tick polling every 4 seconds (4000 ms)
+    const capacityTimer = setInterval(() => {
+      fetchSafeZoneStatus(true);
+    }, 4000);
+
+    // Auto-refresh live meteorological data every 10 minutes (600,000 ms)
+    const autoRefreshTimer = setInterval(() => {
+      fetchAllData(false);
+    }, 600000);
+
+    return () => {
+      clearInterval(capacityTimer);
+      clearInterval(autoRefreshTimer);
+    };
+  }, [fetchSafeZoneStatus]);
+
 
   // Fetch simulated disaster state for a specific time step t
   const handleSimulateStep = useCallback(async (step) => {
@@ -144,8 +326,11 @@ function App() {
       setActiveDetailedRoute({
         ...data,
         from: routeItem.from,
-        to: routeItem.to,
+        to: routeItem.effectiveDest || routeItem.to,
       });
+      if (activeTab === 'dashboard' || activeTab === 'capacity') {
+        setActiveTab('map');
+      }
     } catch (err) {
       console.error('Error fetching highway route geometry:', err);
     } finally {
@@ -197,7 +382,7 @@ function App() {
     setInCommandCenter(true);
   };
 
-  // Compute live dataset analytics for quick stats and map legend
+  // Compute live dataset analytics for quick stats and map legend based on active riskMode
   const stats = useMemo(() => {
     if (!geoData || !geoData.features) {
       return {
@@ -229,7 +414,13 @@ function App() {
         safe += 1;
         capacity += Number(props.capacity) || 0;
       } else {
-        const r = (props.risk || '').toLowerCase();
+        // Select risk according to active riskMode
+        const r = (
+          riskMode === 'baseline'
+            ? (props.baseline_risk || props.risk || '')
+            : (props.risk || props.baseline_risk || '')
+        ).toLowerCase();
+
         if (r === 'high') high += 1;
         else if (r === 'medium') medium += 1;
         else if (r === 'low') low += 1;
@@ -252,7 +443,7 @@ function App() {
       totalPopulation: population,
       totalCapacity: capacity,
     };
-  }, [geoData]);
+  }, [geoData, riskMode]);
 
   // If not entered yet, render the Command Center Entry Screen
   if (!inCommandCenter) {
@@ -265,6 +456,9 @@ function App() {
       />
     );
   }
+
+  const smartAlerts = weatherMeta?.smart_alerts || [];
+  const hasActiveSmartAlerts = smartAlerts.length > 0 && !dismissedAlerts;
 
   return (
     <div className={`safeshift-app ${theme === 'light' ? 'light-theme' : 'dark-theme'}`}>
@@ -296,6 +490,13 @@ function App() {
           </button>
           <button
             type="button"
+            className={`tab-btn ${activeTab === 'capacity' ? 'active' : ''}`}
+            onClick={() => setActiveTab('capacity')}
+          >
+            🛡️ Shelter Capacities
+          </button>
+          <button
+            type="button"
             className={`tab-btn ${activeTab === 'map' ? 'active' : ''}`}
             onClick={() => setActiveTab('map')}
           >
@@ -318,7 +519,7 @@ function App() {
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             title={
               theme === 'dark'
-                ? 'Switch to Light Mode (Map becomes dark)'
+                ? 'Switch to Light Mode'
                 : 'Switch to Dark Mode'
             }
           >
@@ -327,16 +528,17 @@ function App() {
 
           <div className={`status-indicator ${error ? 'offline' : 'online'}`}>
             <span className="status-dot" />
-            <span>{error ? 'API Offline' : 'FastAPI Connected'}</span>
+            <span>{error ? 'API Offline' : 'FastAPI Live'}</span>
           </div>
 
           <button
             type="button"
             className="refresh-btn"
-            onClick={fetchAllData}
-            title="Sync Live GIS & Relocation Data"
+            onClick={() => fetchAllData(true)}
+            disabled={isRefreshingWeather}
+            title="Sync live Open-Meteo weather & recompute risks"
           >
-            🔄 Sync Data
+            {isRefreshingWeather ? '⏳ Syncing...' : '🌦️ Sync Weather'}
           </button>
 
           <button
@@ -350,12 +552,21 @@ function App() {
         </div>
       </header>
 
+      {/* Modern Smart Alert Notification System */}
+      <SmartAlertBanner
+        geoData={geoData}
+        weatherMeta={weatherMeta}
+        onLocateZone={handleLocateZone}
+        onSelectZone={handleLocateZone}
+        riskMode={riskMode}
+      />
+
       {/* Main Container */}
       <main className="app-main">
-        {loading && (
+        {loading && !geoData && (
           <div className="map-loading-overlay">
             <div className="spinner" />
-            <p>Loading multi-hazard spatial data & relocation routes...</p>
+            <p>Loading multi-hazard spatial data & real-time weather predictions...</p>
           </div>
         )}
 
@@ -365,32 +576,58 @@ function App() {
             <div className="error-text">
               <h3>Backend Connection Notice</h3>
               <p>{error}</p>
-              <button type="button" className="retry-btn" onClick={fetchAllData}>
+              <button type="button" className="retry-btn" onClick={() => fetchAllData(true)}>
                 Retry Connection
               </button>
             </div>
           </div>
         )}
 
-        {/* 1. Dashboard Only View */}
+        {/* 1. Analytics & Relocation Dashboard */}
         {activeTab === 'dashboard' && (
           <div className="dashboard-scrollable-view">
             <DashboardPanel
               geoData={geoData}
               relocationPlan={relocationPlan}
               theme={theme}
+              riskMode={riskMode}
             />
           </div>
         )}
 
-        {/* 2. Map Only View */}
+        {/* 2. Dedicated Safe Zone Capacity & Rerouting Operations Page */}
+        {activeTab === 'capacity' && (
+          <div className="dashboard-scrollable-view">
+            <SafeZoneCapacityPage
+              safeZoneStatus={safeZoneStatus}
+              geoData={geoData}
+              relocationPlan={relocationPlan}
+              onViewAlternateRoutes={handleViewAlternateRoutes}
+              onLocateZone={handleLocateZone}
+              onTraceRoute={handleTraceRoute}
+              onApplyReroute={handleApplyReroute}
+              autoRerouteEnabled={autoRerouteEnabled}
+              onToggleAutoReroute={() => setAutoRerouteEnabled(!autoRerouteEnabled)}
+              onResetCapacitySimulation={handleResetCapacitySimulation}
+              theme={theme}
+            />
+          </div>
+        )}
+
+        {/* 3. Map Only View */}
         {activeTab === 'map' && (
+
           <div className="map-full-view">
             <StatsBar
               stats={stats}
               selectedFilters={selectedFilters}
               onToggleFilter={handleToggleFilter}
               theme={theme}
+              weatherMeta={weatherMeta}
+              onRefreshWeather={fetchAllData}
+              isRefreshingWeather={isRefreshingWeather}
+              riskMode={riskMode}
+              onToggleRiskMode={setRiskMode}
             />
             <div className="map-view-container">
               <HazardMap
@@ -403,6 +640,14 @@ function App() {
                 simTimeStep={simTimeStep}
                 activeDetailedRoute={activeDetailedRoute}
                 onClearDetailedRoute={handleClearDetailedRoute}
+                riskMode={riskMode}
+                selectedZone={selectedZone}
+                locateTarget={locateTarget}
+                safeZoneStatus={safeZoneStatus}
+                activeMultiRoutes={activeMultiRoutes}
+                selectedRouteId={selectedMultiRouteChoice}
+                onSelectMultiRouteChoice={handleSelectMultiRouteChoice}
+                onClearMultiRoutes={() => setActiveMultiRoutes(null)}
               />
               {selectedZone && (
                 <ZoneDetailsModal
@@ -414,6 +659,7 @@ function App() {
                   onClearRoute={handleClearDetailedRoute}
                   loadingRoute={loadingRoute}
                   theme={theme}
+                  riskMode={riskMode}
                 />
               )}
             </div>
@@ -429,6 +675,11 @@ function App() {
                 selectedFilters={selectedFilters}
                 onToggleFilter={handleToggleFilter}
                 theme={theme}
+                weatherMeta={weatherMeta}
+                onRefreshWeather={fetchAllData}
+                isRefreshingWeather={isRefreshingWeather}
+                riskMode={riskMode}
+                onToggleRiskMode={setRiskMode}
               />
               <div className="map-view-container">
                 <HazardMap
@@ -441,6 +692,14 @@ function App() {
                   simTimeStep={simTimeStep}
                   activeDetailedRoute={activeDetailedRoute}
                   onClearDetailedRoute={handleClearDetailedRoute}
+                  riskMode={riskMode}
+                  selectedZone={selectedZone}
+                  locateTarget={locateTarget}
+                  safeZoneStatus={safeZoneStatus}
+                  activeMultiRoutes={activeMultiRoutes}
+                  selectedRouteId={selectedMultiRouteChoice}
+                  onSelectMultiRouteChoice={handleSelectMultiRouteChoice}
+                  onClearMultiRoutes={() => setActiveMultiRoutes(null)}
                 />
                 {selectedZone && (
                   <ZoneDetailsModal
@@ -452,6 +711,7 @@ function App() {
                     onClearRoute={handleClearDetailedRoute}
                     loadingRoute={loadingRoute}
                     theme={theme}
+                    riskMode={riskMode}
                   />
                 )}
               </div>
@@ -462,6 +722,13 @@ function App() {
                 geoData={geoData}
                 relocationPlan={relocationPlan}
                 theme={theme}
+                riskMode={riskMode}
+                safeZoneStatus={safeZoneStatus}
+                onViewAlternateRoutes={handleViewAlternateRoutes}
+                onLocateZone={handleLocateZone}
+                autoRerouteEnabled={autoRerouteEnabled}
+                onToggleAutoReroute={() => setAutoRerouteEnabled(!autoRerouteEnabled)}
+                onResetCapacitySimulation={handleResetCapacitySimulation}
               />
             </div>
           </div>
@@ -481,8 +748,29 @@ function App() {
         }}
         simMetrics={simMetrics}
       />
+
+      {/* Stacked Live Shelter Capacity Warnings */}
+      <CapacityToastStack
+        alerts={safeZoneStatus?.capacity_alerts || []}
+        onViewAlternateRoutes={handleViewAlternateRoutes}
+        onLocateZone={handleLocateZone}
+        theme={theme}
+      />
+
+      {/* Multi-Route Alternate Safe Haven Modal */}
+      {showAltRoutesModal && activeMultiRoutes && (
+        <AlternateRoutesModal
+          multiRoutesData={activeMultiRoutes}
+          selectedRouteId={selectedMultiRouteChoice}
+          onSelectRoute={handleSelectMultiRouteChoice}
+          onApplyReroute={handleApplyReroute}
+          onClose={() => setShowAltRoutesModal(false)}
+          theme={theme}
+        />
+      )}
     </div>
   );
 }
 
 export default App;
+

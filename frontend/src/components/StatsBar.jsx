@@ -6,6 +6,11 @@ export default function StatsBar({
   onToggleFilter,
   selectedFilter, // backward compatibility fallback
   onSelectFilter,
+  weatherMeta = null,
+  onRefreshWeather,
+  isRefreshingWeather = false,
+  riskMode = 'baseline',
+  onToggleRiskMode,
 }) {
   const activeFilters = Array.isArray(selectedFilters)
     ? selectedFilters
@@ -31,6 +36,38 @@ export default function StatsBar({
 
   return (
     <div className="stats-header-container">
+      {/* Top Bar with Mode Selector & Weather Indicator */}
+      <div className="stats-mode-toolbar">
+        <div className="risk-mode-switch-group">
+          <span className="mode-switch-label">Zone Risk Mode:</span>
+          <div className="risk-mode-toggle-container">
+            <button
+              type="button"
+              className={`mode-toggle-btn ${riskMode === 'baseline' ? 'active-baseline' : ''}`}
+              onClick={() => onToggleRiskMode && onToggleRiskMode('baseline')}
+              title="View historical vulnerability baseline (Standard Red / Orange / Yellow zones)"
+            >
+              📊 Baseline Vulnerability
+            </button>
+            <button
+              type="button"
+              className={`mode-toggle-btn ${riskMode === 'live' ? 'active-live' : ''}`}
+              onClick={() => onToggleRiskMode && onToggleRiskMode('live')}
+              title="View dynamic risks predicted by real-time precipitation"
+            >
+              🌦️ Live Weather Risk
+            </button>
+          </div>
+        </div>
+
+        {riskMode === 'live' && (
+          <div className="live-mode-badge-hint">
+            <span className="live-pulse-dot" />
+            <span>Real-time weather risk prediction active</span>
+          </div>
+        )}
+      </div>
+
       {/* Metrics Cards */}
       <div className="metrics-grid">
         <div className="metric-card">
@@ -65,6 +102,33 @@ export default function StatsBar({
             <span className="metric-label">Shelter Capacity</span>
             <span className="metric-value text-green">
               {(stats.totalCapacity || 0).toLocaleString()}
+            </span>
+          </div>
+        </div>
+
+        {/* Live Weather Status Card */}
+        <div className="metric-card weather-status-card">
+          <div className="metric-icon">🌦️</div>
+          <div className="metric-content">
+            <div className="weather-metric-top">
+              <span className="metric-label">Live Weather Sync</span>
+              {onRefreshWeather && (
+                <button
+                  type="button"
+                  className="btn-quick-weather-sync"
+                  onClick={() => onRefreshWeather(true)}
+                  disabled={isRefreshingWeather}
+                  title="Sync real-time rainfall & recalculate disaster risks"
+                >
+                  {isRefreshingWeather ? '⏳' : '🔄'}
+                </button>
+              )}
+            </div>
+            <span className="metric-value text-blue" style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span className="live-weather-pulse" />
+              {weatherMeta?.smart_alerts_count > 0
+                ? `🚨 ${weatherMeta.smart_alerts_count} Surge Alerts`
+                : 'Active & Predicted'}
             </span>
           </div>
         </div>

@@ -8,11 +8,28 @@ export default function ZoneDetailsModal({
   activeDetailedRoute,
   onClearRoute,
   loadingRoute = false,
+  riskMode = 'baseline',
 }) {
   if (!zone) return null;
 
   const isSafe = zone.safe === true || zone.location_type === 'relocation_site';
-  const risk = (zone.risk || '').toLowerCase();
+  const activeRisk = (
+    riskMode === 'baseline'
+      ? (zone.baseline_risk || zone.risk || 'unknown')
+      : (zone.risk || zone.baseline_risk || 'unknown')
+  );
+  const risk = activeRisk.toLowerCase();
+
+  const priority = (
+    riskMode === 'baseline'
+      ? (zone.baseline_risk === 'high' ? 'immediate' : zone.baseline_risk === 'medium' ? 'short-term' : 'monitoring')
+      : (zone.priority || 'monitoring')
+  );
+
+  const rainfall = zone.rainfall !== undefined ? Number(zone.rainfall) : null;
+  const humidity = zone.humidity !== undefined ? Number(zone.humidity) : null;
+  const temp = zone.temperature !== undefined ? Number(zone.temperature) : null;
+  const weather = zone.weather || null;
 
   // Find destination safe shelter from the relocation plan
   const matchedRoute = relocationPlan.find(
@@ -34,7 +51,7 @@ export default function ZoneDetailsModal({
             <span className="panel-subtitle">
               {isSafe
                 ? 'Designated Relocation Shelter'
-                : `${(zone.hazard_type || 'Hazard').toUpperCase()} Vulnerability Area`}
+                : `${(zone.hazard_type || 'Hazard').toUpperCase()} Vulnerability Area (${riskMode === 'live' ? 'Live Weather' : 'Baseline'})`}
             </span>
           </div>
         </div>
@@ -66,11 +83,11 @@ export default function ZoneDetailsModal({
           </span>
         </div>
 
-        {zone.priority && (
+        {priority && (
           <div className="detail-stat-row">
             <span className="detail-label">Evacuation Priority</span>
             <span className="detail-value highlight-priority">
-              {zone.priority.toUpperCase()}
+              {priority.toUpperCase()}
             </span>
           </div>
         )}
@@ -99,6 +116,58 @@ export default function ZoneDetailsModal({
             <span className="detail-value text-capitalize">
               {zone.hazard_type}
             </span>
+          </div>
+        )}
+
+        {/* Live Meteorological Feed Card */}
+        {rainfall !== null && (
+          <div className="panel-weather-card">
+            <div className="weather-card-header">
+              <div className="weather-card-title">
+                <span>🌦️ Live Meteorological Feed</span>
+              </div>
+              <span className="weather-live-tag">Open-Meteo</span>
+            </div>
+            
+            <div className="weather-grid">
+              <div className="weather-stat-box">
+                <span className="weather-stat-label">Accumulated Rain</span>
+                <strong className={`weather-stat-val ${rainfall > 80 ? 'text-rain-heavy' : 'text-rain-mod'}`}>
+                  🌧️ {rainfall} mm
+                </strong>
+              </div>
+              <div className="weather-stat-box">
+                <span className="weather-stat-label">Relative Humidity</span>
+                <strong className="weather-stat-val text-humidity">
+                  💧 {humidity ?? '--'}%
+                </strong>
+              </div>
+              <div className="weather-stat-box">
+                <span className="weather-stat-label">Ambient Temp</span>
+                <strong className="weather-stat-val text-temp">
+                  🌡️ {temp ?? '--'}°C
+                </strong>
+              </div>
+              <div className="weather-stat-box">
+                <span className="weather-stat-label">Conditions</span>
+                <strong className="weather-stat-val text-condition" title={weather || 'Normal'}>
+                  ⛅ {weather || 'Normal'}
+                </strong>
+              </div>
+            </div>
+
+            <div className="weather-impact-alert">
+              <span className="impact-dot" />
+              <span>
+                {rainfall > 100
+                  ? 'Extreme precipitation >100mm triggering High Flood triage'
+                  : rainfall > 80 && zone.hazard_type === 'landslide'
+                  ? 'Heavy precipitation >80mm on slopes triggering Landslide warning'
+                  : rainfall >= 40
+                  ? 'Moderate rainfall detected; active monitoring engaged'
+                  : 'Precipitation within baseline seasonal range'}
+              </span>
+            </div>
           </div>
         )}
 
@@ -147,7 +216,7 @@ export default function ZoneDetailsModal({
           <p>
             {isSafe
               ? 'This zone is operational and designated to receive evacuees from immediate high-priority zones.'
-              : zone.priority === 'immediate'
+              : priority === 'immediate'
               ? 'Immediate dispatch required. Direct affected population to nearest designated safe zone.'
               : 'Zone under active monitoring. Prepare contingency transit channels.'}
           </p>

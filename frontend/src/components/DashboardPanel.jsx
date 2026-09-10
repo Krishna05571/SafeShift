@@ -61,6 +61,7 @@ export default function DashboardPanel({
   geoData,
   relocationPlan = [],
   theme = 'dark',
+  riskMode = 'baseline',
 }) {
   const isLight = theme === 'light';
   const gridColor = isLight ? '#e2e8f0' : '#334155';
@@ -82,8 +83,16 @@ export default function DashboardPanel({
         if (isSafe) {
           totalSafeCapacity += Number(p.capacity) || 0;
         } else {
-          const risk = (p.risk || '').toLowerCase();
-          const priority = (p.priority || '').toLowerCase();
+          const risk = (
+            riskMode === 'baseline'
+              ? (p.baseline_risk || p.risk || '')
+              : (p.risk || p.baseline_risk || '')
+          ).toLowerCase();
+          const priority = (
+            riskMode === 'baseline'
+              ? (p.baseline_risk === 'high' ? 'immediate' : p.baseline_risk === 'medium' ? 'short-term' : 'monitoring')
+              : (p.priority || '')
+          ).toLowerCase();
           const population = Number(p.population) || 0;
 
           if (risk === 'high') {
@@ -110,7 +119,7 @@ export default function DashboardPanel({
       totalSafeCapacity,
       totalRelocatedPeople,
     };
-  }, [geoData, relocationPlan]);
+  }, [geoData, relocationPlan, riskMode]);
 
   // 2. Chart Data: Relocation Allocations by Origin & Destination
   const routeChartData = useMemo(() => {
@@ -134,7 +143,11 @@ export default function DashboardPanel({
     geoData.features.forEach((f) => {
       const p = f.properties || {};
       if (!p.safe) {
-        const risk = (p.risk || 'low').toLowerCase();
+        const risk = (
+          riskMode === 'baseline'
+            ? (p.baseline_risk || p.risk || 'low')
+            : (p.risk || p.baseline_risk || 'low')
+        ).toLowerCase();
         if (counts[risk] !== undefined) {
           counts[risk] += Number(p.population) || 0;
         }
@@ -146,7 +159,7 @@ export default function DashboardPanel({
       { name: 'Medium Risk', value: counts.medium, color: PIE_COLORS.medium },
       { name: 'Low Risk', value: counts.low, color: PIE_COLORS.low },
     ].filter((item) => item.value > 0);
-  }, [geoData]);
+  }, [geoData, riskMode]);
 
   // 4. Chart Data: Safe Zone Utilization (Allocated vs Total Capacity)
   const safeZoneUtilizationData = useMemo(() => {
@@ -250,6 +263,7 @@ export default function DashboardPanel({
 
       {/* Interactive Charts Section */}
       <div className="charts-grid">
+
         {/* Chart 1: Relocation Population by Hazard Zone */}
         <div className="chart-card">
           <div className="chart-header">

@@ -665,7 +665,7 @@ export default function CommandCenterEntry({
           <div className="scc-footer">
             <span>
               <Shield size={13} style={{ verticalAlign: '-2px', marginRight: 6 }} />
-              Built for Smart India Hackathon — <b>SafeShift AI</b>
+              Built for Smart India Hackathon — <b>SafeShift</b>
             </span>
             <span className="scc-footer-right">In alignment with NDMA &amp; SDMA Protocols</span>
           </div>
