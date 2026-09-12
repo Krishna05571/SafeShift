@@ -504,7 +504,12 @@ function App() {
     <div className={`safeshift-app ${theme === 'light' ? 'light-theme' : 'dark-theme'}`}>
       {/* Top Navbar */}
       <header className="app-navbar">
-        <div className="nav-brand">
+        <div
+          className="nav-brand"
+          onClick={() => setAppMode('landing')}
+          style={{ cursor: 'pointer' }}
+          title="Return to SafeShift Homepage"
+        >
           <SafeShiftLogo iconOnly size={34} />
           <div>
             <div className="brand-title-wrap">
