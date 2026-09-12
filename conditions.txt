@@ -1,27 +1,266 @@
-floods :
-rainfall                  risk
- 
-r<100mm                   high
+================================================================================
+SAFESHIFT DISASTER INTELLIGENCE & SCENARIO ENGINE
+CONDITIONS, MATHEMATICAL MODELS, AND PROBABILITY EQUATIONS REFERENCE
+================================================================================
+Document Version: 3.0.0
+Updated: September 2026
 
-r>=50 && r<=100           medium
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+1. Meteorological Ingestion & Live Weather Mappings
+2. Baseline & Live Weather Risk Prediction Rules
+3. Dynamic Flood Spread & Polygon Inundation Model
+4. Dynamic Landslide Slope Probability Model
+5. Risk Severity Color Gradient Progression Model
+6. Safe Zone Capacity & Occupancy Growth Forecast Model
+7. Multi-Zone Spillover Rerouting & Alternate Selection Model
+8. Emergency Relocation Triage & Priority Scoring Model
+9. Highway Navigation & Routing Physics Model
 
-r<50                       low
+================================================================================
+1. METEOROLOGICAL INGESTION & LIVE WEATHER MAPPINGS
+================================================================================
+SafeShift integrates live meteorological feeds from Open-Meteo Meteorological 
+API (Keyless & Real-time) and OpenWeatherMap API with regional fallback data.
 
-landslides :
-rainfall                  risk
- 
-r<80mm                   high
+Parameters Tracked per Hazard Zone:
+- Rainfall Accumulation (24-hour total mm) [R]
+- Current Rain Intensity (1-hour rate mm/h) [R_1h]
+- Relative Humidity (%) [H]
+- Ambient Temperature (°C) [T]
+- WMO Atmospheric Condition Code (0 - 99)
 
-r>40 && r<=80           medium
+WMO Weather Code Classification:
+  - 0: Clear sky
+  - 1-3: Mainly clear / Partly cloudy / Overcast
+  - 45, 48: Foggy / Depositing rime fog
+  - 51, 53, 55: Light / Moderate / Dense Drizzle
+  - 61, 63, 65: Slight / Moderate / Heavy Rain
+  - 66, 67: Freezing Rain
+  - 71, 73, 75: Snowfall (High altitude)
+  - 80, 81, 82: Slight / Moderate / Violent Rain Showers
+  - 95, 96, 99: Thunderstorm / Severe Hailstorm
 
-r<40                     low
+================================================================================
+2. BASELINE & LIVE WEATHER RISK PREDICTION RULES
+================================================================================
+Dynamic disaster risk prediction categorizes zones based on hazard type and 
+live meteorological thresholds:
 
-------------------------------------------------------------------------------------------------------------------------------------------------------
-⏳ Disaster Warning Horizons & Accuracy Breakdown
+A. FLOOD HAZARD CLASSIFICATION:
+--------------------------------------------------------------------------------
+| Rainfall Accumulation (R) | Predicted Risk | Action Priority | Risk Score (W) |
+|---------------------------|----------------|-----------------|----------------|
+| R > 100.0 mm              | HIGH           | immediate       | 3              |
+| 50.0 mm <= R <= 100.0 mm  | MEDIUM         | short-term      | 2              |
+| R < 50.0 mm               | LOW            | monitoring      | 1              |
 
-| Lead Time | Prediction Horizon | Meteorological Mechanism | Accuracy Level | Action Triggered in SafeShift |
-| :--- | :--- | :--- | :--- | :--- |
-| **0 to 6 Hours** | Nowcasting / Immediate Alert | Radar Doppler reflectivity, hourly rain-rate accumulation (>50 mm/h), flash-flood runoff | **95% – 99%** | 🚨 **Immediate Evacuation Dispatch**: Sound sirens, trigger highway corridors, lock shelters. |
-| **1 to 3 Days** (24 – 72 Hours) | Short-Range Flood & Landslide Warning | High-resolution Numerical Weather Prediction (NWP) models (HRRR, ECMWF IFS 0.1°), 24h accumulated precipitation (>100 mm) | **85% – 92%** | ⚠️ **Pre-Emptive Evacuation & Transit Staging**: Pre-allocate buses, clear high-risk highway bottlenecks, alert disaster response teams (NDRF/SDRF). |
-| **3 to 7 Days** (72 – 168 Hours) | Medium-Range Early Warning Outlook | Global Ensemble Forecast Systems (GEFS, ECMWF 7-day daily precipitation sum), low-pressure depression tracking, monsoon trough shifts | **70% – 80%** | 📊 **Resource & Shelter Preparation**: Stock relief shelters with rations, prepare hospital beds, inspect dam discharge levels. |
-------------------------------------------------------------------------------------------------------------------------------------------------------
+* Alert Trigger: When R > 100mm and baseline risk was not High:
+  "Heavy rainfall (>100mm) detected. Flood risk escalated to HIGH."
+
+B. LANDSLIDE HAZARD CLASSIFICATION (Mountain / Slope Terrain):
+--------------------------------------------------------------------------------
+| Rainfall Accumulation (R) | Predicted Risk | Action Priority | Risk Score (W) |
+|---------------------------|----------------|-----------------|----------------|
+| R > 80.0 mm               | HIGH           | immediate       | 3              |
+| 40.0 mm <= R <= 80.0 mm   | MEDIUM         | short-term      | 2              |
+| R < 40.0 mm               | LOW            | monitoring      | 1              |
+
+* Alert Trigger: When R > 80mm on mountain terrain:
+  "Severe precipitation (>80mm) on mountain terrain. Landslide risk surged to HIGH."
+
+C. CYCLONE / GENERAL STORM SURGE:
+--------------------------------------------------------------------------------
+| Rainfall Accumulation (R) | Predicted Risk | Action Priority | Risk Score (W) |
+|---------------------------|----------------|-----------------|----------------|
+| R > 90.0 mm               | HIGH           | immediate       | 3              |
+| 45.0 mm <= R <= 90.0 mm   | MEDIUM         | short-term      | 2              |
+| R < 45.0 mm               | LOW            | monitoring      | 1              |
+
+================================================================================
+3. DYNAMIC FLOOD SPREAD & POLYGON INUNDATION MODEL
+================================================================================
+The Scenario Intelligence Engine projects physical flood spread along a continuous
+timeline t in [0, 60 minutes].
+
+Let:
+  t in [0, 60] = Elapsed forecast time in minutes
+  t_norm = t / 60.0 (Normalized timeline factor in [0.0, 1.0])
+  R = 24-hour rainfall accumulation in mm
+  Pop_0 = Baseline affected population in zone
+
+Equations:
+1. Rainfall Amplification Factor:
+   RainFactor = max(1.0, 1.0 + (R / 110.0))
+
+2. Polygon Perimeter Dilation / Buffer Factor (E_flood):
+   E_flood(t) = 1.0 + (RainFactor - 1.0) * (0.15 + 0.85 * t_norm)
+
+   * Geometric Dilation: Buffered in degrees using Shapely:
+     BufferDegrees = (E_flood(t) - 1.0) * 0.05
+     BufferedPolygon = Polygon.buffer(BufferDegrees)
+
+3. Projected Inundation Depth (Depth_m):
+   Depth_m(t) = 0.4 + (R / 45.0) * (0.2 + 0.8 * t_norm) [meters]
+
+4. Population Displacement Surge:
+   Pop(t) = Pop_0 * [1.0 + (E_flood(t) - 1.0) * 0.75]
+
+5. Flood Spread Percentage:
+   SpreadPct(t) = (E_flood(t) - 1.0) * 100.0 [%]
+
+6. Flood Severity Index (S_flood in [0.0, 1.0]):
+   S_flood = min(1.0, (R / 140.0) * 0.6 + t_norm * 0.4)
+
+7. Dynamic Escalation Thresholds:
+   - High Risk: R >= 80mm OR (R >= 50mm AND t >= 25m) OR t >= 45m
+   - Medium Risk: R >= 40mm OR t >= 15m
+   - Critical Alert Trigger: R >= 90mm AND t >= 30m -> Flash Inundation Cresting
+
+================================================================================
+4. DYNAMIC LANDSLIDE SLOPE PROBABILITY MODEL
+================================================================================
+Simulates hillside saturation, shear failure, and debris flow probability.
+
+Let:
+  P_0 = Base terrain vulnerability:
+        P_0 = 0.25 (if Baseline Risk = Low)
+        P_0 = 0.50 (if Baseline Risk = Medium)
+        P_0 = 0.70 (if Baseline Risk = High)
+  H = Relative Humidity (%)
+  R = Rainfall accumulation (mm)
+  t_norm = t / 60.0
+
+Equations:
+1. Soil Saturation Rate (S_soil):
+   S_soil = (H / 100.0) * (R / 80.0)
+
+2. Dynamic Slope Failure Probability P_landslide(t):
+   P_landslide(t) = min(0.98, P_0 + S_soil * 0.35 * t_norm)
+
+3. Hazard Zone Expansion Factor (E_landslide):
+   E_landslide(t) = 1.0 + (P_landslide(t) * 0.45 * t_norm)
+
+4. Hillside Population Displacement Surge:
+   Pop(t) = Pop_0 * [1.0 + (E_landslide(t) - 1.0) * 0.60]
+
+5. Landslide Severity Index (S_landslide in [0.0, 1.0]):
+   S_landslide = P_landslide(t)
+
+6. Landslide Risk Escalation Thresholds:
+   - High Risk: P_landslide >= 0.70 OR (R >= 70mm AND t >= 20m)
+   - Medium Risk: P_landslide >= 0.45 OR (R >= 40mm AND t >= 15m)
+   - Critical Warning Alert: P_landslide >= 0.75 AND t >= 15m -> High Landslide Warning
+
+================================================================================
+5. RISK SEVERITY COLOR GRADIENT PROGRESSION MODEL
+================================================================================
+Maps continuous Severity Score S in [0.0, 1.0] to visual cartographic gradients:
+
+| Severity Score (S) | Hex Color | Color Name     | Visual Meaning                |
+|--------------------|-----------|----------------|-------------------------------|
+| S <= 0.25          | #10b981   | Emerald Green  | Normal Baseline / Safe Haven  |
+| 0.25 < S <= 0.50   | #eab308   | Amber Yellow   | Moderate Inundation / Warning |
+| 0.50 < S <= 0.75   | #f97316   | Sunset Orange  | Severe Multi-Hazard Spread    |
+| 0.75 < S <= 0.90   | #ef4444   | Alert Red      | Critical Emergency Evacuation |
+| S > 0.90           | #7c3aed   | Extreme Violet | Catastrophic / Overflow Surge |
+
+================================================================================
+6. SAFE ZONE CAPACITY & OCCUPANCY GROWTH FORECAST MODEL
+================================================================================
+Tracks live and projected shelter occupancy across all 18 safe shelters.
+
+Let:
+  Cap = Total shelter capacity (bed count)
+  Occ_0 = Initial occupancy = Cap * [0.55 + ((idx % 4) * 0.11)] (55% to 88%)
+  r_inflow = Base shelter inflow rate = 120 + ((idx * 45) % 150) [people/min]
+  InflowEvacuees = Total evacuees allocated from matched hazard zones
+  t in [0, 60] = Simulation timeline minutes
+
+Equations:
+1. Projected Occupancy at Time t:
+   ArrivalProgress = min(1.0, (t / 60.0) * 1.2)
+   Occ(t) = min(Cap, Occ_0 + (InflowEvacuees * 0.55 * ArrivalProgress) + (r_inflow * (t / 60.0) * 12))
+
+2. Remaining Shelter Capacity:
+   RemCap(t) = max(0, Cap - Occ(t))
+
+3. Fill Percentage:
+   FillPct(t) = (Occ(t) / Cap) * 100.0 [%]
+
+4. Estimated Time to 100% Saturation (ETA_full):
+   ETA_full = (RemCap(t) / r_inflow) if RemCap > 0 else 0 [minutes]
+
+5. Multi-Tier Capacity Threshold Alerts:
+--------------------------------------------------------------------------------
+| Fill Percentage (FillPct) | Remaining Cap | Alert Level | Status Color | Action Mandatory               |
+|---------------------------|---------------|-------------|--------------|--------------------------------|
+| FillPct >= 100.0%         | 0%            | FULL        | #ef4444      | Shelter Saturated - Divert Flow|
+| 90.0% <= FillPct < 100.0% | <= 10%        | CRITICAL    | #ff6b6b      | 10% Remaining - Reroute Active |
+| 70.0% <= FillPct < 90.0%  | <= 30%        | WARNING     | #f59e0b      | 30% Remaining - Standby Inflow |
+| FillPct < 70.0%           | > 30%         | NORMAL      | #10b981      | Optimal Shelter Capacity       |
+
+================================================================================
+7. MULTI-ZONE SPILLOVER REROUTING & ALTERNATE SELECTION MODEL
+================================================================================
+Trigger Condition: When a safe haven reaches FillPct >= 90% (only 10% remaining),
+excess evacuees are rerouted to candidate safe havens.
+
+Candidate Filtering Criteria:
+  - Exclude currently overloaded safe haven.
+  - Require RemCap > 0 AND FillPct < 99%.
+
+Candidate Suitability Score (Lower score = higher ranking):
+  Score(c) = (Distance_km * 0.7) - ((RemCap / 1000.0) * 0.3)
+
+Top 2 Ranked Alternates:
+  - Alternate 1 (Primary Alternate): Nearest candidate with available headroom.
+  - Alternate 2 (Secondary Alternate): Contingency candidate with available headroom.
+
+Spillover Corridor Map Rendering:
+  - Color: #8b5cf6 (Purple dashed polyline)
+  - Tag: "Automated Spillover Reroute"
+  - Dash Pattern: '8, 6', Weight: 4.0px
+
+================================================================================
+8. EMERGENCY RELOCATION TRIAGE & PRIORITY SCORING MODEL
+================================================================================
+1. Relocation Priority Score:
+   PriorityScore = RiskScore * AffectedPopulation
+   Where: High Risk = 3, Medium Risk = 2, Low Risk = 1
+
+2. Greedy Proximity Matching:
+   - Hazard zones are sorted by PriorityScore in descending order.
+   - For each hazard zone, safe zones are ranked by Great-Circle Haversine distance:
+     d = 2 * r * asin(sqrt(sin^2((lat2 - lat1)/2) + cos(lat1)*cos(lat2)*sin^2((lon2 - lon1)/2)))
+     where r = 6371.0 km.
+   - People allocated: Allocated = min(PeopleRemaining, SafeZone.RemCap)
+   - SafeZone.RemCap is decremented; if population exceeds capacity, split across 
+     next nearest safe zone.
+
+================================================================================
+9. HIGHWAY NAVIGATION & ROUTING PHYSICS MODEL
+================================================================================
+Calculates realistic road transit duration and driving distance:
+
+1. Road Curvature & Winding Factor (W):
+   - Dense Himalayan / Western Ghats terrain: W = 1.35
+   - Dense Urban / Congested delta: W = 1.28
+   - Plain Interstate Highway: W = 1.20
+   RoadDistance_km = CrowFliesDistance_km * W
+
+2. Road Speed Profile (V):
+   - Mountainous winding route: V = 42 km/h
+   - Monsoon flooded urban corridor: V = 35 km/h
+   - National Highway corridor: V = 65 km/h
+
+3. Travel Duration:
+   TravelTime_min = round((RoadDistance_km / V) * 60) [minutes]
+
+4. Curved Highway Bezier Interpolation:
+   Midpoint with perpendicular lateral displacement:
+   dx = dest_lon - orig_lon
+   dy = dest_lat - orig_lat
+   Perpendicular vector: (-dy, dx) scaled by road curvature factor.
+================================================================================

@@ -1,5 +1,10 @@
 // Risk and Safe Zone color definitions
 export const RISK_COLORS = {
+  catastrophic: {
+    fill: '#7c3aed',
+    border: '#5b21b6',
+    label: 'Catastrophic Risk (Immediate Redirection)',
+  },
   high: {
     fill: '#ef4444',
     border: '#b91c1c',
@@ -23,7 +28,7 @@ export const RISK_COLORS = {
 };
 
 /**
- * Returns Leaflet path options for a given GeoJSON feature based on riskMode
+ * Returns Leaflet path options for a given GeoJSON feature based on riskMode and dynamic scenario projections
  * @param {Object} feature - GeoJSON feature
  * @param {string} riskMode - 'baseline' | 'live'
  */
@@ -50,6 +55,15 @@ export const getZoneStyle = (feature, riskMode = 'baseline') => {
   ).toLowerCase();
 
   switch (risk) {
+    case 'catastrophic':
+      return {
+        fillColor: RISK_COLORS.catastrophic.fill,
+        weight: 3,
+        opacity: 1.0,
+        color: RISK_COLORS.catastrophic.border,
+        fillOpacity: 0.75,
+        dashArray: '',
+      };
     case 'high':
       return {
         fillColor: RISK_COLORS.high.fill,
@@ -98,12 +112,12 @@ export const getHighlightStyle = (feature, riskMode = 'baseline') => {
     ...base,
     weight: 4,
     color: '#ffffff',
-    fillOpacity: 0.8,
+    fillOpacity: 0.85,
   };
 };
 
 /**
- * Generate formatted HTML popup content for a GeoJSON feature with Live Meteorological Data
+ * Generate formatted HTML popup content for a GeoJSON feature with Live Meteorological Data & Scenario Projections
  */
 export const createPopupContent = (properties = {}, riskMode = 'baseline') => {
   const isSafe = properties.safe === true || properties.location_type === 'relocation_site';
@@ -150,18 +164,14 @@ export const createPopupContent = (properties = {}, riskMode = 'baseline') => {
 
   const badgeColor = isSafe
     ? capStatusColor
-    : risk === 'HIGH'
-    ? '#ef4444'
-    : risk === 'MEDIUM'
-    ? '#f97316'
-    : '#eab308';
+    : (risk === 'HIGH' ? '#ef4444' : risk === 'MEDIUM' ? '#f97316' : '#eab308');
 
   return `
-    <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 250px; color: #1e293b; padding: 2px;">
+    <div style="font-family: system-ui, -apple-system, sans-serif; min-width: 260px; color: #1e293b; padding: 2px;">
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid ${badgeColor}; padding-bottom: 6px; margin-bottom: 8px;">
         <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: #0f172a; max-width: 155px; line-height: 1.2;">${areaName}</h3>
         <span style="background: ${badgeColor}; color: white; padding: 2px 7px; border-radius: 9999px; font-size: 9.5px; font-weight: 700; text-transform: uppercase;">
-          ${isSafe ? (fillPct >= 90 ? `${fillPct}% CRITICAL` : `${fillPct ? `${fillPct}% ` : ''}SAFE HAVEN`) : `${risk} RISK (${riskMode === 'live' ? 'LIVE' : 'BASELINE'})`}
+          ${isSafe ? (fillPct >= 90 ? `${fillPct}% CRITICAL` : `${fillPct ? `${fillPct}% ` : ''}SAFE HAVEN`) : `${risk} RISK`}
         </span>
       </div>
 
@@ -213,7 +223,7 @@ export const createPopupContent = (properties = {}, riskMode = 'baseline') => {
         <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
           <strong style="color: #64748b;">Mode View:</strong>
           <span style="font-weight: 700; color: ${riskMode === 'live' ? '#0284c7' : '#64748b'};">
-            ${riskMode === 'live' ? 'Live Predicted Risk' : 'Baseline Terrain Risk'}
+            ${riskMode === 'live' ? 'Live Meteorological Feed' : 'Baseline Vulnerability'}
           </span>
         </div>
 
@@ -238,4 +248,5 @@ export const createPopupContent = (properties = {}, riskMode = 'baseline') => {
     </div>
   `;
 };
+
 

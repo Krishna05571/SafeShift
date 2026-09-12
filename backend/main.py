@@ -13,14 +13,14 @@ load_dotenv(dotenv_path=ENV_PATH)
 try:
     from relocation import generate_relocation_plan
     from gemini_explainer import explain_relocation_plan
-    from simulation import simulate_disaster_state
+    from simulation import simulate_disaster_state, project_disaster_scenario
     from routing import get_detailed_route_geometry
     from weather_service import get_live_zones_with_weather, fetch_weather_for_coordinate
     from safezone_service import safezone_manager
 except ImportError:
     from .relocation import generate_relocation_plan
     from .gemini_explainer import explain_relocation_plan
-    from .simulation import simulate_disaster_state
+    from .simulation import simulate_disaster_state, project_disaster_scenario
     from .routing import get_detailed_route_geometry
     from .weather_service import get_live_zones_with_weather, fetch_weather_for_coordinate
     from .safezone_service import safezone_manager
@@ -28,7 +28,7 @@ except ImportError:
 app = FastAPI(
     title="SafeShift Disaster Intelligence API",
     description="Multi-Hazard Spatial Relocation Engine, Live Meteorological Risk Prediction, Real-Time Shelter Capacity Tracking, Google Maps Routing, AI Explainer & Disaster Simulator",
-    version="2.4.0"
+    version="3.0.0"
 )
 
 # Enable CORS for React Frontend
@@ -58,11 +58,15 @@ try:
 except Exception as e:
     print(f"Initial weather pre-warm notice: {e}")
 
+
+
 class ExplainRequest(BaseModel):
     relocation_plan: Optional[List[Dict[str, Any]]] = None
 
 class SimulationRequest(BaseModel):
-    time_step: int = 0
+    time_step: Optional[int] = None
+    minutes: Optional[int] = None
+    refresh_weather: bool = False
 
 class CapacityUpdateRequest(BaseModel):
     reset: bool = False
@@ -72,15 +76,15 @@ class CapacityUpdateRequest(BaseModel):
 @app.get("/")
 def home():
     return {
-        "message": "SafeShift Disaster Intelligence & Weather Prediction API running",
-        "version": "2.3.0",
+        "message": "SafeShift Disaster Scenario Intelligence & Dynamic Weather API running",
+        "version": "3.0.0",
         "endpoints": [
             "GET /zones",
             "GET /zones/live",
             "GET /weather-impact",
             "GET /relocation-plan?live=true",
             "GET /route-geometry?origin_lat=...&origin_lon=...&dest_lat=...&dest_lon=...",
-            "GET /simulate-disaster?t=0",
+            "GET /simulate-disaster?minutes=0",
             "POST /simulate-disaster",
             "POST /ai-explain",
             "GET /ai-explain"
@@ -152,23 +156,44 @@ def get_route_geometry(
     )
 
 @app.get("/simulate-disaster")
-def get_simulate_disaster(t: int = Query(default=0, description="Simulation time step: 0=normal, 1=medium expands, 2=high spreads, 3=peak outbreak")):
+def get_simulate_disaster(
+    minutes: Optional[int] = Query(default=None, ge=0, le=60, description="Forecast timeline minutes (0 to 60)"),
+    t: Optional[int] = Query(default=None, description="Legacy discrete time step: 0=0m, 1=15m, 2=35m, 3=60m"),
+    refresh_weather: bool = Query(default=False, description="Force refresh weather before projection")
+):
     """
-    Simulates disaster progression across India at time step t:
-    t=0 -> Normal baseline
-    t=1 -> Medium risk expands (+35% displacement)
-    t=2 -> High risk spreads (+65% surge, immediate priority)
-    t=3 -> Peak emergency outbreak
+    Scenario Intelligence Engine: Simulates disaster progression across India over a continuous 0-60 min timeline:
+    - Integrates live rainfall, humidity, and atmospheric conditions
+    - Projects physical flood spread and landslide slope failure probability
+    - Forecasts safe zone load growth, triggers 30% and 10% remaining threshold warnings
+    - Evaluates multi-zone spillover reallocations to top 2 nearest candidate safe havens
     """
-    return simulate_disaster_state(geo_data, time_step=t)
+    if minutes is not None:
+        target_minutes = max(0, min(int(minutes), 60))
+    elif t is not None:
+        step_map = {0: 0, 1: 15, 2: 35, 3: 60}
+        target_minutes = step_map.get(int(t), min(60, max(0, int(t))))
+    else:
+        target_minutes = 0
+
+    return project_disaster_scenario(geo_data, forecast_minutes=target_minutes, force_weather_refresh=refresh_weather)
 
 @app.post("/simulate-disaster")
 def post_simulate_disaster(body: Optional[SimulationRequest] = Body(default=None)):
     """
-    POST endpoint to simulate dynamic disaster escalation and recompute the relocation plan.
+    POST endpoint to run dynamic scenario projections over 0-60 min timeline.
     """
-    t = body.time_step if body else 0
-    return simulate_disaster_state(geo_data, time_step=t)
+    target_minutes = 0
+    refresh = False
+    if body:
+        refresh = body.refresh_weather
+        if body.minutes is not None:
+            target_minutes = max(0, min(int(body.minutes), 60))
+        elif body.time_step is not None:
+            step_map = {0: 0, 1: 15, 2: 35, 3: 60}
+            target_minutes = step_map.get(int(body.time_step), min(60, max(0, int(body.time_step))))
+
+    return project_disaster_scenario(geo_data, forecast_minutes=target_minutes, force_weather_refresh=refresh)
 
 @app.post("/ai-explain")
 def post_ai_explain(body: Optional[ExplainRequest] = Body(default=None)):

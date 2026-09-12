@@ -31,15 +31,25 @@ export default function ZoneDetailsModal({
   const temp = zone.temperature !== undefined ? Number(zone.temperature) : null;
   const weather = zone.weather || null;
 
-  // Find destination safe shelter from the relocation plan
-  const matchedRoute = relocationPlan.find(
-    (r) => r.from === zone.area_name || (r.from && zone.area_name && r.from.includes(zone.area_name))
-  );
+  // Find destination safe shelters from the relocation plan with resilient normalized matching
+  const matchedRoutes = relocationPlan.filter((r) => {
+    if (!r || !r.from || !zone.area_name) return false;
+    const rFrom = r.from.trim().toLowerCase();
+    const zName = zone.area_name.trim().toLowerCase();
+    return rFrom === zName || rFrom.includes(zName) || zName.includes(rFrom);
+  });
 
-  const isRouteActive =
-    activeDetailedRoute &&
-    matchedRoute &&
-    (activeDetailedRoute.from === matchedRoute.from || activeDetailedRoute.to === matchedRoute.to);
+  const handleTraceHighway = (routeItem) => {
+    if (!onTraceRoute || !routeItem) return;
+    const routePayload = {
+      ...routeItem,
+      from: routeItem.from || zone.area_name,
+      to: routeItem.effectiveDest || routeItem.to,
+      origin_coords: routeItem.origin_coords || [zone.centroid_lat, zone.centroid_lon],
+      dest_coords: routeItem.dest_coords || routeItem.effectiveDestCoords,
+    };
+    onTraceRoute(routePayload);
+  };
 
   return (
     <aside className="zone-details-panel" aria-label="Zone Details Panel">
@@ -171,42 +181,61 @@ export default function ZoneDetailsModal({
         )}
 
         {/* Assigned Evacuation Route Details */}
-        {!isSafe && matchedRoute && (
+        {!isSafe && matchedRoutes.length > 0 && (
           <div className="panel-route-card">
             <div className="route-card-title">
-              <span>Assigned Safe Haven</span>
+              <span>Assigned Safe Haven{matchedRoutes.length > 1 ? 's' : ''}</span>
             </div>
-            <strong className="route-dest-name">{matchedRoute.to}</strong>
-            <div className="route-quick-stats">
-              <span>{matchedRoute.people?.toLocaleString()} Evacuees</span>
-              <span>•</span>
-              <span>{matchedRoute.travel_time_min ? `${matchedRoute.travel_time_min} mins` : 'N/A'}</span>
-            </div>
+            {matchedRoutes.map((rItem, rIdx) => {
+              const fromMatch =
+                activeDetailedRoute?.from &&
+                rItem?.from &&
+                activeDetailedRoute.from.trim().toLowerCase() === rItem.from.trim().toLowerCase();
+              const toMatch =
+                activeDetailedRoute?.to &&
+                rItem?.to &&
+                activeDetailedRoute.to.trim().toLowerCase() === rItem.to.trim().toLowerCase();
+              const isThisActive = fromMatch && toMatch;
 
-            {/* On-Demand Curved Road Route Action */}
-            <div className="route-action-buttons">
-              {!isRouteActive ? (
-                <button
-                  type="button"
-                  className="btn-trace-route"
-                  onClick={() => onTraceRoute && onTraceRoute(matchedRoute)}
-                  disabled={loadingRoute}
-                >
-                  {loadingRoute ? 'Tracing Highway...' : 'Trace Highway Route'}
-                </button>
-              ) : (
-                <div className="active-route-btn-group">
-                  <span className="route-active-indicator">Highway Active</span>
-                  <button
-                    type="button"
-                    className="btn-clear-route"
-                    onClick={() => onClearRoute && onClearRoute()}
-                  >
-                    Clear
-                  </button>
+              return (
+                <div key={`route-opt-${rIdx}-${rItem.to}`} style={{ marginBottom: rIdx < matchedRoutes.length - 1 ? '12px' : '0' }}>
+                  <strong className="route-dest-name">{rItem.to}</strong>
+                  <div className="route-quick-stats">
+                    <span>{rItem.people?.toLocaleString()} Evacuees</span>
+                    <span>•</span>
+                    <span>{rItem.travel_time_min ? `${rItem.travel_time_min} mins` : 'N/A'}</span>
+                    {rItem.distance_km && (
+                      <>
+                        <span>•</span>
+                        <span>{rItem.distance_km} km</span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* On-Demand Curved Road Route Action */}
+                  <div className="route-action-buttons" style={{ marginTop: '6px' }}>
+                    <button
+                      type="button"
+                      className={`btn-trace-route ${isThisActive ? 'btn-trace-active' : ''}`}
+                      onClick={() => handleTraceHighway(rItem)}
+                      title={isThisActive ? 'Re-center active highway navigation on map' : 'Trace highway route on map'}
+                    >
+                      {isThisActive ? 'Highway Active (Re-center)' : 'Trace Highway Route'}
+                    </button>
+                    {isThisActive && (
+                      <button
+                        type="button"
+                        className="btn-clear-route"
+                        onClick={() => onClearRoute && onClearRoute()}
+                        title="Clear highway navigation route"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
                 </div>
-              )}
-            </div>
+              );
+            })}
           </div>
         )}
 

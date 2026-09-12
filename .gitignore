@@ -27,4 +27,6 @@ dist-ssr/
 *.njsproj
 *.sln
 *.sw?
-.DS_Store
+# Large Data / Precomputed caches
+data/precomputed_routes.json
+*.cache

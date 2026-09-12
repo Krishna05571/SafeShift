@@ -9,9 +9,30 @@ from dotenv import load_dotenv
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(dotenv_path=ENV_PATH)
 
+import json
+
 # In-memory routing and geometry caches
 _ROUTE_CACHE: Dict[Tuple[float, float, float, float], Tuple[float, float]] = {}
 _GEOMETRY_CACHE: Dict[Tuple[float, float, float, float], Dict[str, Any]] = {}
+
+# Preload high-precision highway route cache from disk for instant zero-latency responses (<1ms)
+PRECOMPUTED_FILE = Path(__file__).resolve().parent.parent / "data" / "precomputed_routes.json"
+if PRECOMPUTED_FILE.exists():
+    try:
+        with open(PRECOMPUTED_FILE, "r", encoding="utf-8") as f:
+            precomputed_data = json.load(f)
+            for k, v in precomputed_data.items():
+                parts = k.split("_")
+                if len(parts) == 4:
+                    coords_key = (
+                        round(float(parts[0]), 4),
+                        round(float(parts[1]), 4),
+                        round(float(parts[2]), 4),
+                        round(float(parts[3]), 4),
+                    )
+                    _GEOMETRY_CACHE[coords_key] = v
+    except Exception as e:
+        print("Precomputed route loading notice:", e)
 
 def haversine_distance_km(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
     """
@@ -96,52 +117,6 @@ def decode_google_polyline(polyline_str: str) -> List[List[float]]:
         coordinates.append([round(lat / 1e5, 5), round(lng / 1e5, 5)])
     return coordinates
 
-def get_google_maps_route(
-    origin_lat: float, origin_lon: float, dest_lat: float, dest_lon: float
-) -> Optional[Dict[str, Any]]:
-    """
-    Fetches driving directions from Google Maps Directions API.
-    """
-    google_key = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
-    if not google_key or google_key.startswith("your_") or len(google_key) < 20:
-        return None
-
-    try:
-        url = "https://maps.googleapis.com/maps/api/directions/json"
-        params = {
-            "origin": f"{origin_lat},{origin_lon}",
-            "destination": f"{dest_lat},{dest_lon}",
-            "mode": "driving",
-            "alternatives": "false",
-            "key": google_key,
-        }
-        resp = requests.get(url, params=params, timeout=3.0)
-        if resp.status_code == 200:
-            data = resp.json()
-            if data.get("status") == "OK" and data.get("routes"):
-                route = data["routes"][0]
-                overview_poly = route.get("overview_polyline", {}).get("points", "")
-                coords = decode_google_polyline(overview_poly) if overview_poly else []
-                
-                leg = route.get("legs", [{}])[0]
-                dist_m = leg.get("distance", {}).get("value", 0)
-                dur_s = leg.get("duration", {}).get("value", 0)
-                
-                dist_km = round(dist_m / 1000.0, 2)
-                dur_min = round(dur_s / 60.0, 1)
-
-                if coords:
-                    return {
-                        "coordinates": coords,
-                        "distance_km": dist_km,
-                        "travel_time_min": dur_min,
-                        "source": "Google Maps Directions Engine",
-                        "waypoints_count": len(coords),
-                    }
-    except Exception as e:
-        print(f"Google Directions API error: {e}")
-    return None
-
 def get_detailed_route_geometry(
     origin_lat: float,
     origin_lon: float,
@@ -153,8 +128,8 @@ def get_detailed_route_geometry(
     highways, bridges, and mountain passes between two disaster locations.
 
     Priority Chain:
-    1. Google Maps Directions API (High Accuracy Traffic & Geometry)
-    2. OpenRouteService API
+    1. Precomputed Highway Cache (Instant <1ms)
+    2. OpenRouteService API (OpenStreetMap Highway Engine)
     3. OSRM (Open Source Routing Machine)
     4. Smooth terrain-interpolated polyline curve fallback
     """
@@ -167,13 +142,7 @@ def get_detailed_route_geometry(
     if cache_key in _GEOMETRY_CACHE:
         return _GEOMETRY_CACHE[cache_key]
 
-    # 1. Try Google Maps Directions API
-    g_res = get_google_maps_route(origin_lat, origin_lon, dest_lat, dest_lon)
-    if g_res:
-        _GEOMETRY_CACHE[cache_key] = g_res
-        return g_res
-
-    # 2. Try OpenRouteService if configured
+    # 1. Try OpenRouteService API
     api_key = os.getenv("OPENROUTESERVICE_API_KEY", "").strip()
     if api_key and len(api_key) > 30 and not api_key.startswith("your_"):
         try:
@@ -189,7 +158,7 @@ def get_detailed_route_geometry(
                     [dest_lon, dest_lat],
                 ]
             }
-            resp = requests.post(url, json=body, headers=headers, timeout=2.0)
+            resp = requests.post(url, json=body, headers=headers, timeout=2.5)
             if resp.status_code == 200:
                 data = resp.json()
                 features = data.get("features", [])
@@ -213,14 +182,14 @@ def get_detailed_route_geometry(
         except Exception:
             pass
 
-    # 3. Try OSRM (Open Source Routing Machine - OpenStreetMap Public Engine)
+    # 3. Try OSRM (Open Source Routing Machine - OpenStreetMap Public Highway Engine)
     try:
         osrm_url = (
             f"https://router.project-osrm.org/route/v1/driving/"
             f"{origin_lon},{origin_lat};{dest_lon},{dest_lat}"
             f"?overview=full&geometries=geojson"
         )
-        resp = requests.get(osrm_url, timeout=2.5)
+        resp = requests.get(osrm_url, timeout=3.0)
         if resp.status_code == 200:
             data = resp.json()
             routes = data.get("routes", [])
@@ -246,7 +215,7 @@ def get_detailed_route_geometry(
     # 4. Smooth terrain-interpolated multi-point road curve fallback
     dist_km, dur_min = calculate_road_metrics(origin_lat, origin_lon, dest_lat, dest_lon)
     interpolated_points = _generate_curved_interpolation(
-        origin_lat, origin_lon, dest_lat, dest_lon, num_segments=16
+        origin_lat, origin_lon, dest_lat, dest_lon, num_segments=24, offset_factor=0.03
     )
 
     result = {
@@ -260,30 +229,44 @@ def get_detailed_route_geometry(
     return result
 
 def _generate_curved_interpolation(
-    lat1: float, lon1: float, lat2: float, lon2: float, num_segments: int = 16, offset_factor: float = 0.12
+    lat1: float, lon1: float, lat2: float, lon2: float, num_segments: int = 40, offset_factor: float = 0.06
 ) -> List[List[float]]:
     """
-    Generates a natural, realistic highway curve avoiding straight-line appearance.
-    Supports adjustable offset_factor for multi-alternative branching routes.
+    Generates a natural, realistic highway curve with multi-point terrain winding.
+    Avoids straight-line appearance during API fallback.
     """
     points = []
-    mid_lat = (lat1 + lat2) / 2.0
-    mid_lon = (lon1 + lon2) / 2.0
-    
     dlat = lat2 - lat1
     dlon = lon2 - lon1
-    
-    perp_lat = -dlon * offset_factor
-    perp_lon = dlat * offset_factor
+    dist = math.hypot(dlat, dlon)
+    if dist == 0:
+        return [[lat1, lon1], [lat2, lon2]]
 
-    ctrl_lat = mid_lat + perp_lat
-    ctrl_lon = mid_lon + perp_lon
+    # Normal unit vector for perpendicular offsets
+    perp_lat = -dlon / dist
+    perp_lon = dlat / dist
+
+    # Natural winding amplitude scaled by distance
+    amp = min(0.08, max(0.02, dist * offset_factor))
 
     for i in range(num_segments + 1):
         t = i / float(num_segments)
-        lat = (1 - t) ** 2 * lat1 + 2 * (1 - t) * t * ctrl_lat + t ** 2 * lat2
-        lon = (1 - t) ** 2 * lon1 + 2 * (1 - t) * t * ctrl_lon + t ** 2 * lon2
-        points.append([round(lat, 5), round(lon, 5)])
+        # Base straight-line interpolation
+        base_lat = (1.0 - t) * lat1 + t * lat2
+        base_lon = (1.0 - t) * lon1 + t * lon2
+
+        # Multi-harmonic sinusoidal lateral displacement (peaks in the middle, zero at ends)
+        envelope = math.sin(math.pi * t)
+        lateral_offset = (
+            amp * envelope * math.sin(math.pi * t)
+            + (amp * 0.4) * envelope * math.sin(2.0 * math.pi * t)
+            + (amp * 0.2) * envelope * math.sin(3.0 * math.pi * t)
+        )
+
+        curved_lat = base_lat + perp_lat * lateral_offset
+        curved_lon = base_lon + perp_lon * lateral_offset
+        points.append([round(curved_lat, 5), round(curved_lon, 5)])
 
     return points
+
 

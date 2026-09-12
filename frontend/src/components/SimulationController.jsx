@@ -1,31 +1,62 @@
 import React, { useState } from 'react';
 
 export default function SimulationController({
-  timeStep,
-  isSimulating,
-  onStartSimulation,
-  onPauseSimulation,
-  onResetSimulation,
-  onSelectStep,
-  simMetrics,
+  forecastMinutes = 0,
+  isSimulating = false,
+  onRunProjection,
+  onPauseProjection,
+  onResetProjection,
+  onSeekMinutes,
+  simMetrics = null,
+  weatherMeta = null,
 }) {
   const [isMinimized, setIsMinimized] = useState(false);
 
-  const steps = [
-    { t: 0, label: 'T=0', title: 'Normal' },
-    { t: 1, label: 'T=1', title: 'Medium Expands' },
-    { t: 2, label: 'T=2', title: 'High Spreads' },
-    { t: 3, label: 'T=3', title: 'Peak Emergency' },
-  ];
+  // Preset time horizons
+  const presetMinutes = [0, 15, 30, 45, 60];
 
-  const phaseColors = {
-    0: { bg: 'rgba(16, 185, 129, 0.2)', text: '#34d399', border: '#10b981', label: 'T=0: Baseline' },
-    1: { bg: 'rgba(249, 115, 22, 0.2)', text: '#fb923c', border: '#f97316', label: 'T=1: Inundation (+35%)' },
-    2: { bg: 'rgba(239, 68, 68, 0.25)', text: '#f87171', border: '#ef4444', label: 'T=2: Critical (+65%)' },
-    3: { bg: 'rgba(168, 85, 247, 0.25)', text: '#c084fc', border: '#a855f7', label: 'T=3: Peak Emergency' },
+  // Dynamic phase and color based on continuous forecast minutes
+  const getTimelineStatus = (mins) => {
+    if (mins === 0) {
+      return {
+        label: 'T+0m: Baseline State',
+        tag: 'Baseline',
+        color: '#10b981',
+        bg: 'rgba(16, 185, 129, 0.15)',
+        border: '#10b981',
+        desc: 'Normal monitoring. Live meteorological inputs active.',
+      };
+    } else if (mins <= 20) {
+      return {
+        label: `T+${mins}m: Flood Inundation Expanding`,
+        tag: 'Inundation Surge',
+        color: '#eab308',
+        bg: 'rgba(234, 179, 8, 0.18)',
+        border: '#eab308',
+        desc: 'Rivers swell, slope saturation initiates localized evacuations.',
+      };
+    } else if (mins <= 40) {
+      return {
+        label: `T+${mins}m: Multi-Hazard Severe Spread`,
+        tag: 'Critical Escalation',
+        color: '#f97316',
+        bg: 'rgba(249, 115, 22, 0.20)',
+        border: '#f97316',
+        desc: 'Flood perimeters dilate, landslide slope instability escalates.',
+      };
+    } else {
+      return {
+        label: `T+${mins}m: Peak Scenario Surge`,
+        tag: 'Peak Disaster',
+        color: '#ef4444',
+        bg: 'rgba(239, 68, 68, 0.25)',
+        border: '#ef4444',
+        desc: 'Widespread multi-zone inundation and shelter capacity spillover.',
+      };
+    }
   };
 
-  const currentPhase = phaseColors[timeStep] || phaseColors[0];
+  const status = getTimelineStatus(forecastMinutes);
 
   if (isMinimized) {
     return (
@@ -34,10 +65,10 @@ export default function SimulationController({
           type="button"
           className="sim-dock-min-btn"
           onClick={() => setIsMinimized(false)}
-          title="Open Disaster Simulation Dock"
+          title="Open Scenario Intelligence Engine Dock"
         >
-          <span className="sim-pulse-dot" style={{ backgroundColor: currentPhase.border }} />
-          <span>Simulator: {currentPhase.label}</span>
+          <span className="sim-pulse-dot" style={{ backgroundColor: status.border }} />
+          <span>Scenario Engine: <strong>T+{forecastMinutes}m</strong> ({status.tag})</span>
           <span className="expand-icon">Expand</span>
         </button>
       </div>
@@ -46,70 +77,115 @@ export default function SimulationController({
 
   return (
     <div className="sim-dock-container">
-      {/* Left: Brand / Title */}
+      {/* Left: Brand / Title & Status */}
       <div className="sim-dock-header">
+        <div className="sim-dock-badge-row">
+          <span className="sim-engine-tag">Scenario Intelligence Engine</span>
+          {isSimulating && <span className="sim-live-indicator">● LIVE SIMULATION</span>}
+        </div>
         <div className="sim-dock-titles">
-          <span className="sim-dock-title">Disaster Simulator</span>
-          <span className="sim-dock-phase" style={{ color: currentPhase.text }}>
-            {currentPhase.label}
+          <span className="sim-dock-phase" style={{ color: status.color }}>
+            {status.label}
           </span>
         </div>
       </div>
 
-      {/* Center: Play/Pause & Reset Controls */}
-      <div className="sim-dock-actions">
+      {/* Primary Action Button: "Run Scenario Projection" / "Pause" */}
+      <div className="sim-dock-main-action">
         {!isSimulating ? (
           <button
             type="button"
-            className="sim-dock-btn sim-dock-btn-play"
-            onClick={onStartSimulation}
-            title="Start automated dynamic disaster simulation"
+            className="sim-dock-btn-projection"
+            onClick={onRunProjection}
+            title="Execute dynamic 0-60 min scenario projection"
           >
-            Play
+            <span className="btn-icon">⚡</span>
+            <span>Run Scenario Projection</span>
           </button>
         ) : (
           <button
             type="button"
-            className="sim-dock-btn sim-dock-btn-pause"
-            onClick={onPauseSimulation}
-            title="Pause simulation"
+            className="sim-dock-btn-projection running"
+            onClick={onPauseProjection}
+            title="Pause continuous scenario projection"
           >
-            Pause
+            <span className="btn-icon">⏸</span>
+            <span>Pause Projection</span>
           </button>
         )}
 
         <button
           type="button"
-          className="sim-dock-btn sim-dock-btn-reset"
-          onClick={onResetSimulation}
-          title="Reset to baseline"
+          className="sim-dock-btn-reset-v2"
+          onClick={onResetProjection}
+          title="Reset scenario timeline back to T+0m (Now)"
         >
-          Reset
+          Reset (0m)
         </button>
       </div>
 
-      {/* Step Selector Buttons */}
-      <div className="sim-dock-steps">
-        {steps.map((s) => (
-          <button
-            key={s.t}
-            type="button"
-            className={`sim-dock-step-btn ${timeStep === s.t ? 'active' : ''}`}
-            onClick={() => onSelectStep(s.t)}
-          >
-            <strong>{s.label}</strong>
-            <span className="step-sub">{s.title}</span>
-          </button>
-        ))}
+      {/* Center: Interactive Timeline Slider (0 to 60 Minutes) */}
+      <div className="sim-timeline-control">
+        <div className="sim-timeline-header">
+          <span className="timeline-title">Forecast Horizon:</span>
+          <strong className="timeline-current-val" style={{ color: status.color }}>
+            +{forecastMinutes} Minutes
+          </strong>
+        </div>
+
+        <div className="sim-slider-wrapper">
+          <input
+            type="range"
+            min="0"
+            max="60"
+            step="1"
+            value={forecastMinutes}
+            onChange={(e) => onSeekMinutes(parseInt(e.target.value, 10))}
+            className="sim-timeline-slider"
+            style={{
+              background: `linear-gradient(to right, ${status.color} 0%, ${status.color} ${(forecastMinutes / 60) * 100}%, rgba(148, 163, 184, 0.3) ${(forecastMinutes / 60) * 100}%, rgba(148, 163, 184, 0.3) 100%)`,
+            }}
+          />
+        </div>
+
+        {/* Preset Marker Buttons */}
+        <div className="sim-preset-markers">
+          {presetMinutes.map((m) => (
+            <button
+              key={m}
+              type="button"
+              className={`sim-marker-btn ${forecastMinutes === m ? 'active' : ''}`}
+              onClick={() => onSeekMinutes(m)}
+            >
+              {m === 0 ? 'Now' : `+${m}m`}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Affected Metrics Badge */}
+      {/* Right: Dynamic Scenario Metrics */}
       {simMetrics && (
-        <div className="sim-dock-metrics">
-          <span className="metrics-label">Evacuees:</span>
-          <strong className="metrics-val">
-            {(simMetrics.total_affected_population || 0).toLocaleString()}
-          </strong>
+        <div className="sim-dock-metrics-v2">
+          <div className="metric-pill">
+            <span className="mp-label">Evacuees:</span>
+            <strong className="mp-val text-red">
+              {(simMetrics.total_affected_population || 0).toLocaleString()}
+            </strong>
+          </div>
+          <div className="metric-pill">
+            <span className="mp-label">High Risk:</span>
+            <strong className="mp-val text-amber">
+              {simMetrics.high_risk_zones_count || 0} zones
+            </strong>
+          </div>
+          {simMetrics.active_spillover_redirections > 0 && (
+            <div className="metric-pill pill-spillover" title="Evacuees rerouted due to shelter saturation">
+              <span className="mp-label">Spillover:</span>
+              <strong className="mp-val text-purple">
+                {simMetrics.active_spillover_redirections} active
+              </strong>
+            </div>
+          )}
         </div>
       )}
 
@@ -125,3 +201,4 @@ export default function SimulationController({
     </div>
   );
 }
+

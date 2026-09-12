@@ -8,6 +8,7 @@ export default function SafeZoneCapacityPage({
   safeZoneStatus = null,
   geoData = null,
   relocationPlan = [],
+  riskMode = 'baseline',
   onViewAlternateRoutes = null,
   onLocateZone = null,
   onTraceRoute = null,
@@ -340,8 +341,16 @@ export default function SafeZoneCapacityPage({
                   </tr>
                 ) : (
                   activeEvacuations.map((evac, eIdx) => {
-                    const isHigh = evac.risk === 'high';
-                    const isMedium = evac.risk === 'medium';
+                    const zoneFeat = geoData?.features?.find((f) => f.properties?.area_name === evac.from);
+                    const activeRisk = (
+                      riskMode === 'baseline'
+                        ? (zoneFeat?.properties?.baseline_risk || evac.baseline_risk || evac.risk || 'medium')
+                        : (evac.risk || zoneFeat?.properties?.risk || 'medium')
+                    ).toLowerCase();
+
+                    const isHigh = activeRisk === 'high';
+                    const isMedium = activeRisk === 'medium';
+                    const isLow = activeRisk === 'low';
                     const riskBadgeClass = isHigh ? 'pill-high' : isMedium ? 'pill-medium' : 'pill-low';
 
                     return (
@@ -354,7 +363,7 @@ export default function SafeZoneCapacityPage({
                         </td>
                         <td>
                           <span className={`risk-pill ${riskBadgeClass}`}>
-                            {(evac.risk || 'MEDIUM').toUpperCase()}
+                            {activeRisk.toUpperCase()}
                           </span>
                         </td>
                         <td className="font-bold text-blue">
@@ -407,12 +416,19 @@ export default function SafeZoneCapacityPage({
                               className="btn-matrix-trace"
                               onClick={() => {
                                 if (onTraceRoute) {
-                                  onTraceRoute(evac);
+                                  onTraceRoute({
+                                    ...evac,
+                                    from: evac.from,
+                                    to: evac.effectiveDest || evac.to || evac.originalDest,
+                                    effectiveDest: evac.effectiveDest || evac.to || evac.originalDest,
+                                    origin_coords: evac.origin_coords || (zoneFeat?.properties ? [zoneFeat.properties.centroid_lat, zoneFeat.properties.centroid_lon] : null),
+                                    dest_coords: evac.effectiveDestCoords || evac.dest_coords,
+                                  });
                                 } else if (onLocateZone) {
                                   onLocateZone({
                                     area_name: evac.from,
-                                    centroid_lat: evac.origin_coords?.[0],
-                                    centroid_lon: evac.origin_coords?.[1],
+                                    centroid_lat: evac.origin_coords?.[0] || zoneFeat?.properties?.centroid_lat,
+                                    centroid_lon: evac.origin_coords?.[1] || zoneFeat?.properties?.centroid_lon,
                                   });
                                 }
                               }}

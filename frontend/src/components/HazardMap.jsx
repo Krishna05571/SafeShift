@@ -340,20 +340,21 @@ export default function HazardMap({
           filteredRoutes.map((route, idx) => {
             if (!route.origin_coords || !route.dest_coords) return null;
 
+            const isSpillover = route.spillover_active === true;
             const risk = (route.risk || 'medium').toLowerCase();
             const isHigh = risk === 'high';
             const isLow = risk === 'low';
-            const routeColor = isHigh ? '#ef4444' : isLow ? '#10b981' : '#eab308';
+            const routeColor = isSpillover ? '#8b5cf6' : (isHigh ? '#ef4444' : isLow ? '#10b981' : '#eab308');
 
             return (
               <Polyline
-                key={`route-${idx}-${route.from}-${route.to}-t${simTimeStep}`}
-                positions={[route.origin_coords, route.dest_coords]}
+                key={`route-${idx}-${route.from}-${route.effectiveDest || route.to}-t${simTimeStep}-${isSpillover ? 'spill' : 'norm'}`}
+                positions={[route.origin_coords, route.effectiveDestCoords || route.dest_coords]}
                 pathOptions={{
                   color: routeColor,
-                  weight: isHigh ? 3.5 : 2.5,
-                  opacity: 0.85,
-                  dashArray: isHigh ? '6, 8' : '5, 6',
+                  weight: isSpillover ? 4.0 : (isHigh ? 3.5 : 2.5),
+                  opacity: isSpillover ? 0.95 : 0.85,
+                  dashArray: isSpillover ? '8, 6' : (isHigh ? '6, 8' : '5, 6'),
                   lineCap: 'round',
                   lineJoin: 'round',
                 }}
@@ -361,21 +362,29 @@ export default function HazardMap({
                 <Tooltip sticky direction="top" className="safeshift-route-tooltip">
                   <div className="route-tooltip-container">
                     <div className="route-tooltip-header">
-                      <span className="route-tooltip-tag">Evacuation Corridor</span>
+                      <span className={`route-tooltip-tag ${isSpillover ? 'tag-spillover' : ''}`}>
+                        {isSpillover ? '⚡ Automated Spillover Reroute' : 'Evacuation Corridor'}
+                      </span>
                       <span
                         className={`route-risk-pill ${
-                          isHigh ? 'pill-high' : isLow ? 'pill-low' : 'pill-medium'
+                          isSpillover ? 'pill-spillover' : (isHigh ? 'pill-high' : isLow ? 'pill-low' : 'pill-medium')
                         }`}
                       >
-                        {risk.toUpperCase()}
+                        {isSpillover ? 'SHELTER FULL' : risk.toUpperCase()}
                       </span>
                     </div>
 
                     <div className="route-tooltip-path">
                       <span className="origin-text">{route.from}</span>
-                      <span className="route-arrow">to</span>
-                      <span className="dest-text">{route.to}</span>
+                      <span className="route-arrow">➔</span>
+                      <span className="dest-text">{route.effectiveDest || route.to}</span>
                     </div>
+
+                    {isSpillover && route.spillover_note && (
+                      <div className="spillover-tooltip-note">
+                        {route.spillover_note}
+                      </div>
+                    )}
 
                     <div className="route-tooltip-grid">
                       <div className="route-stat-item">
@@ -409,9 +418,12 @@ export default function HazardMap({
         {activeDetailedRoute &&
           activeDetailedRoute.coordinates &&
           activeDetailedRoute.coordinates.length > 0 && (
-            <>
+            <React.Fragment
+              key={`detailed-route-wrapper-${activeDetailedRoute.from}-${activeDetailedRoute.to}-${activeDetailedRoute.coordinates.length}-${activeDetailedRoute.source || 'engine'}`}
+            >
               {/* Outer Casing Line for Contrast against Map Features */}
               <Polyline
+                key={`casing-${activeDetailedRoute.from}-${activeDetailedRoute.to}-${activeDetailedRoute.coordinates.length}-${theme}`}
                 positions={activeDetailedRoute.coordinates}
                 pathOptions={{
                   color: theme === 'light' ? '#ffffff' : '#000000',
@@ -424,6 +436,7 @@ export default function HazardMap({
 
               {/* High-Precision Highway Polyline: Black in Light Mode, White in Dark/Night Mode */}
               <Polyline
+                key={`highway-${activeDetailedRoute.from}-${activeDetailedRoute.to}-${activeDetailedRoute.coordinates.length}-${theme}`}
                 positions={activeDetailedRoute.coordinates}
                 pathOptions={{
                   color: theme === 'light' ? '#000000' : '#ffffff',
@@ -471,6 +484,7 @@ export default function HazardMap({
 
               {/* Start & End Pin Markers */}
               <CircleMarker
+                key={`origin-marker-${activeDetailedRoute.from}-${activeDetailedRoute.coordinates[0]?.[0]}-${activeDetailedRoute.coordinates[0]?.[1]}`}
                 center={activeDetailedRoute.coordinates[0]}
                 radius={8}
                 pathOptions={{
@@ -486,6 +500,7 @@ export default function HazardMap({
               </CircleMarker>
 
               <CircleMarker
+                key={`dest-marker-${activeDetailedRoute.to}-${activeDetailedRoute.coordinates[activeDetailedRoute.coordinates.length - 1]?.[0]}-${activeDetailedRoute.coordinates[activeDetailedRoute.coordinates.length - 1]?.[1]}`}
                 center={
                   activeDetailedRoute.coordinates[
                     activeDetailedRoute.coordinates.length - 1
@@ -503,7 +518,7 @@ export default function HazardMap({
                   Safe Haven: {activeDetailedRoute.to}
                 </Tooltip>
               </CircleMarker>
-            </>
+            </React.Fragment>
           )}
 
         {/* Pulsing Radar Markers on Critical Safe Havens (Occupancy >= 90%) */}
@@ -544,10 +559,13 @@ export default function HazardMap({
 
         {/* Multi-Route Alternative Corridors */}
         {activeMultiRoutes && (
-          <>
+          <React.Fragment
+            key={`multi-routes-${activeMultiRoutes.origin?.name}-${selectedRouteId}-${activeMultiRoutes.primary?.coordinates?.length || 0}`}
+          >
             {/* Primary Route */}
             {activeMultiRoutes.primary?.coordinates?.length > 0 && (
               <Polyline
+                key={`multi-primary-${activeMultiRoutes.primary.name}-${activeMultiRoutes.primary.coordinates.length}-${selectedRouteId === 'primary'}`}
                 positions={activeMultiRoutes.primary.coordinates}
                 pathOptions={{
                   color: selectedRouteId === 'primary' ? '#2563eb' : '#3b82f6',
@@ -575,7 +593,7 @@ export default function HazardMap({
 
               return (
                 <Polyline
-                  key={alt.id || aIdx}
+                  key={`multi-alt-${alt.id || aIdx}-${alt.name}-${alt.coordinates.length}-${isSelected}`}
                   positions={alt.coordinates}
                   pathOptions={{
                     color: altColor,
@@ -595,7 +613,7 @@ export default function HazardMap({
                 </Polyline>
               );
             })}
-          </>
+          </React.Fragment>
         )}
 
         {filteredData && (

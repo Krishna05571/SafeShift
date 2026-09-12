@@ -62,6 +62,8 @@ export default function DashboardPanel({
   relocationPlan = [],
   theme = 'dark',
   riskMode = 'baseline',
+  onTraceRoute = null,
+  onLocateZone = null,
 }) {
   const isLight = theme === 'light';
   const gridColor = isLight ? '#e2e8f0' : '#334155';
@@ -124,16 +126,25 @@ export default function DashboardPanel({
   // 2. Chart Data: Relocation Allocations by Origin & Destination
   const routeChartData = useMemo(() => {
     if (!relocationPlan || relocationPlan.length === 0) return [];
-    return relocationPlan.map((r) => ({
-      name: r.from.replace(' Zone', ''),
-      fullName: r.from,
-      destination: r.to,
-      people: r.people,
-      distance: r.distance_km || 0,
-      priority: r.priority_score,
-      risk: (r.risk || 'medium').toUpperCase(),
-    }));
-  }, [relocationPlan]);
+    return relocationPlan.map((r) => {
+      const zoneFeat = geoData?.features?.find((f) => f.properties?.area_name === r.from);
+      const activeRisk = (
+        riskMode === 'baseline'
+          ? (zoneFeat?.properties?.baseline_risk || r.baseline_risk || r.risk || 'medium')
+          : (r.risk || zoneFeat?.properties?.risk || 'medium')
+      ).toUpperCase();
+
+      return {
+        name: r.from.replace(' Zone', ''),
+        fullName: r.from,
+        destination: r.to,
+        people: r.people,
+        distance: r.distance_km || 0,
+        priority: r.priority_score,
+        risk: activeRisk,
+      };
+    });
+  }, [relocationPlan, geoData, riskMode]);
 
   // 3. Chart Data: Population Distribution by Risk Level
   const riskDistributionData = useMemo(() => {
@@ -345,7 +356,14 @@ export default function DashboardPanel({
       </div>
 
       {/* Relocation Plan Table */}
-      <RelocationTable relocationPlan={relocationPlan} theme={theme} />
+      <RelocationTable
+        relocationPlan={relocationPlan}
+        geoData={geoData}
+        riskMode={riskMode}
+        theme={theme}
+        onTraceRoute={onTraceRoute}
+        onLocateZone={onLocateZone}
+      />
     </div>
   );
 }

@@ -15,18 +15,20 @@ export default function SmartAlertBanner({
   weatherMeta,
   onSelectZone,
   onLocateZone,
+  onViewAlternateRoutes,
   riskMode = 'baseline',
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  // Extract and aggregate alerts from both live weather triggers and critical high-risk zones
+  // Extract and aggregate alerts from live weather triggers and critical high-risk zones
   const alerts = useMemo(() => {
-    if (!geoData || !geoData.features) return [];
-
     const list = [];
-    const liveAlerts = weatherMeta?.smart_alerts || [];
     const seenZones = new Set();
+
+    if (!geoData || !geoData.features) return list;
+
+    const liveAlerts = weatherMeta?.smart_alerts || [];
 
     // 1. Live weather surge alerts (Highest priority)
     liveAlerts.forEach((la) => {
@@ -138,7 +140,7 @@ export default function SmartAlertBanner({
         <div className="smart-alert-primary-content">
           <div className="alert-pulse-badge" title="Live Warning Active">
             <span className="alert-pulse-ring" />
-            <span className="alert-pulse-core">🚨</span>
+            <span className="alert-pulse-core">!</span>
           </div>
 
           <div className="alert-main-details">

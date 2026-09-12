@@ -29,6 +29,9 @@ except ImportError:
 # Lock for thread-safe state modification
 _STATE_LOCK = threading.Lock()
 
+# In-memory cache for distance & duration metrics
+_ROAD_METRICS_CACHE: Dict[Tuple[float, float, float, float], Tuple[float, float]] = {}
+
 class SafeZoneCapacityManager:
     """
     Manages real-time shelter capacity, live occupancy simulation,
@@ -245,64 +248,28 @@ class SafeZoneCapacityManager:
 
         # Calculate Distance & ETA for each candidate
         ranked_results = []
-        google_key = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
-
-        # 1. Try Google Maps Distance Matrix API in bulk for all candidates
-        google_matrix_success = False
-        if google_key and len(google_key) > 20 and candidates:
-            try:
-                dest_str = "|".join([f"{c['centroid_lat']},{c['centroid_lon']}" for c in candidates])
-                matrix_url = "https://maps.googleapis.com/maps/api/distancematrix/json"
-                params = {
-                    "origins": f"{origin_lat},{origin_lon}",
-                    "destinations": dest_str,
-                    "mode": "driving",
-                    "key": google_key,
-                }
-                resp = requests.get(matrix_url, params=params, timeout=3.0)
-                if resp.status_code == 200:
-                    m_data = resp.json()
-                    if m_data.get("status") == "OK" and m_data.get("rows"):
-                        elements = m_data["rows"][0].get("elements", [])
-                        for idx, el in enumerate(elements):
-                            if idx < len(candidates) and el.get("status") == "OK":
-                                dist_km = round(el.get("distance", {}).get("value", 0) / 1000.0, 2)
-                                dur_min = round(el.get("duration", {}).get("value", 0) / 60.0, 1)
-                                c = candidates[idx]
-                                ranked_results.append({
-                                    "name": c["name"],
-                                    "distance_km": dist_km,
-                                    "eta_minutes": dur_min,
-                                    "remaining_capacity": c["remaining_capacity"],
-                                    "total_capacity": c["total_capacity"],
-                                    "current_occupancy": c["current_occupancy"],
-                                    "fill_percentage": c["fill_percentage"],
-                                    "centroid_lat": c["centroid_lat"],
-                                    "centroid_lon": c["centroid_lon"],
-                                    "source": "Google Maps Distance Matrix",
-                                })
-                        google_matrix_success = len(ranked_results) > 0
-            except Exception as e:
-                print(f"Google Distance Matrix query failed: {e}")
-
-        # 2. Geodesic & Road Fallback if Google Distance Matrix wasn't used
-        if not google_matrix_success:
-            for c in candidates:
+        for c in candidates:
+            key = (round(origin_lat, 4), round(origin_lon, 4), round(c["centroid_lat"], 4), round(c["centroid_lon"], 4))
+            if key in _ROAD_METRICS_CACHE:
+                dist_km, dur_min = _ROAD_METRICS_CACHE[key]
+            else:
                 dist_km, dur_min = calculate_road_metrics(
                     origin_lat, origin_lon, c["centroid_lat"], c["centroid_lon"]
                 )
-                ranked_results.append({
-                    "name": c["name"],
-                    "distance_km": dist_km,
-                    "eta_minutes": dur_min,
-                    "remaining_capacity": c["remaining_capacity"],
-                    "total_capacity": c["total_capacity"],
-                    "current_occupancy": c["current_occupancy"],
-                    "fill_percentage": c["fill_percentage"],
-                    "centroid_lat": c["centroid_lat"],
-                    "centroid_lon": c["centroid_lon"],
-                    "source": "SafeShift Road Model Engine",
-                })
+                _ROAD_METRICS_CACHE[key] = (dist_km, dur_min)
+
+            ranked_results.append({
+                "name": c["name"],
+                "distance_km": dist_km,
+                "eta_minutes": dur_min,
+                "remaining_capacity": c["remaining_capacity"],
+                "total_capacity": c["total_capacity"],
+                "current_occupancy": c["current_occupancy"],
+                "fill_percentage": c["fill_percentage"],
+                "centroid_lat": c["centroid_lat"],
+                "centroid_lon": c["centroid_lon"],
+                "source": "SafeShift Road Model Engine",
+            })
 
         # Rank by combined suitability: closest distance + available headroom
         ranked_results.sort(key=lambda r: (r["distance_km"] * 0.7 - (r["remaining_capacity"] / 1000.0) * 0.3))

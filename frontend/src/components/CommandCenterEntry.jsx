@@ -38,38 +38,22 @@ const HAZARD_OPTIONS = [
   },
 ];
 
-const SEVERITY_OPTIONS = [
+const RISK_MODE_OPTIONS = [
+  {
+    id: 'live',
+    icon: CloudRain,
+    tier: 'LIVE',
+    tierLabel: 'Real-Time Sync',
+    detail: 'Open-Meteo precipitation & live predicted risk',
+    color: '#0284C7',
+  },
   {
     id: 'baseline',
     icon: BarChart3,
-    tier: 'T0',
-    tierLabel: 'Baseline',
-    detail: 'Normal monitoring',
+    tier: 'STATIC',
+    tierLabel: 'Baseline Mode',
+    detail: 'Historical vulnerability & terrain exposure',
     color: '#16A34A',
-  },
-  {
-    id: 'moderate',
-    icon: CloudRain,
-    tier: 'T1',
-    tierLabel: 'Moderate',
-    detail: 'Inundation surge (+35%)',
-    color: '#F59E0B',
-  },
-  {
-    id: 'severe',
-    icon: AlertTriangle,
-    tier: 'T2',
-    tierLabel: 'Severe',
-    detail: 'High-risk spread (+65%)',
-    color: '#F97316',
-  },
-  {
-    id: 'extreme',
-    icon: AlertOctagon,
-    tier: 'T3',
-    tierLabel: 'Extreme',
-    detail: 'Peak outbreak (+95%)',
-    color: '#DC2626',
   },
 ];
 
@@ -90,21 +74,13 @@ const REGIONS = [
 export default function CommandCenterEntry({
   onEnterCommandCenter,
   initialScenario = 'multi',
-  initialTimeStep = 0,
+  initialRiskMode = 'baseline',
   isApiOnline = true,
 }) {
   const [hazard, setHazard] = useState(
     initialScenario === 'all' ? 'multi' : initialScenario || 'multi'
   );
-  const [severity, setSeverity] = useState(
-    initialTimeStep === 1
-      ? 'moderate'
-      : initialTimeStep === 2
-      ? 'severe'
-      : initialTimeStep === 3
-      ? 'extreme'
-      : 'baseline'
-  );
+  const [riskModeChoice, setRiskModeChoice] = useState(initialRiskMode || 'baseline');
   const [region, setRegion] = useState(REGIONS[0]);
   const [regionOpen, setRegionOpen] = useState(false);
   const [launching, setLaunching] = useState(false);
@@ -116,18 +92,11 @@ export default function CommandCenterEntry({
         onEnterCommandCenter({
           scenario: hazard === 'multi' ? 'all' : hazard,
           region,
-          timeStep:
-            severity === 'baseline'
-              ? 0
-              : severity === 'moderate'
-              ? 1
-              : severity === 'severe'
-              ? 2
-              : 3,
+          riskMode: riskModeChoice,
         });
       }
       setLaunching(false);
-    }, 500);
+    }, 400);
   };
 
   return (
@@ -631,25 +600,25 @@ export default function CommandCenterEntry({
           <div className="scc-section">
             <div className="scc-section-head">
               <span className="scc-step-badge">03</span>
-              <span className="scc-section-title">DISASTER SEVERITY &amp; SIMULATION PHASE</span>
+              <span className="scc-section-title">RISK ASSESSMENT MODE &amp; DATA ENGINE</span>
             </div>
-            <div className="scc-severity-grid">
-              {SEVERITY_OPTIONS.map((sev) => {
-                const Icon = sev.icon;
-                const isSelected = severity === sev.id;
+            <div className="scc-severity-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+              {RISK_MODE_OPTIONS.map((opt) => {
+                const Icon = opt.icon;
+                const isSelected = riskModeChoice === opt.id;
                 return (
                   <button
-                    key={sev.id}
+                    key={opt.id}
                     className={`scc-severity${isSelected ? ' selected' : ''}`}
-                    style={{ '--sev-color': sev.color }}
-                    onClick={() => setSeverity(sev.id)}
+                    style={{ '--sev-color': opt.color }}
+                    onClick={() => setRiskModeChoice(opt.id)}
                     type="button"
                   >
-                    <div className="scc-severity-top" style={{ color: sev.color }}>
+                    <div className="scc-severity-top" style={{ color: opt.color }}>
                       <Icon size={15} />
-                      {sev.tier} {sev.tierLabel}
+                      {opt.tier} • {opt.tierLabel}
                     </div>
-                    <div className="scc-severity-detail">{sev.detail}</div>
+                    <div className="scc-severity-detail">{opt.detail}</div>
                   </button>
                 );
               })}
