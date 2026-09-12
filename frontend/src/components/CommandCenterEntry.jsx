@@ -512,20 +512,6 @@ export default function CommandCenterEntry({
               ← Back to Home
             </button>
           )}
-          <div className="scc-pill">
-            <span className="scc-dot" style={{ background: '#16A34A' }} />
-            System Status&nbsp;&nbsp;All Systems Operational
-          </div>
-        </div>
-        <div className="scc-pill-group">
-          <div className="scc-pill">
-            <span className="scc-dot" style={{ background: isApiOnline ? '#16A34A' : '#EF4444' }} />
-            {isApiOnline ? 'API Connected' : 'Connecting API...'}
-          </div>
-          <div className="scc-pill">
-            <span className="scc-dot" style={{ background: '#A855F7' }} />
-            AI Engine Ready
-          </div>
         </div>
       </div>
 

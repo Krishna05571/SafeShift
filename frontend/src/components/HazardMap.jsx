@@ -10,6 +10,7 @@ import {
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Navigation, X, ArrowRight, Layers, MapPin } from 'lucide-react';
 import { getZoneStyle, getHighlightStyle, createPopupContent } from '../utils/styles';
 import Legend from './Legend';
 
@@ -167,6 +168,21 @@ export default function HazardMap({
 }) {
   const geoJsonRef = useRef(null);
   const [showCorridors, setShowCorridors] = useState(true);
+
+  // Keyboard shortcut: Press Escape to clear active traced route
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (activeDetailedRoute && onClearDetailedRoute) {
+          onClearDetailedRoute();
+        } else if (activeMultiRoutes && onClearMultiRoutes) {
+          onClearMultiRoutes();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeDetailedRoute, activeMultiRoutes, onClearDetailedRoute, onClearMultiRoutes]);
 
   // Map of safe zone name -> live capacity object
   const safeZoneCapacityMap = React.useMemo(() => {
@@ -663,18 +679,28 @@ export default function HazardMap({
           </div>
         ) : activeDetailedRoute ? (
           <div className="active-route-banner">
-            <span className="active-route-tag">
-              Highway: <strong>{activeDetailedRoute.from}</strong> to{' '}
-              <strong>{activeDetailedRoute.to}</strong> ({activeDetailedRoute.distance_km} km |{' '}
-              {activeDetailedRoute.travel_time_min} min)
-            </span>
+            <div className="active-route-header-badge">
+              <Navigation size={13} className="route-nav-pulse-icon" />
+              <span>ACTIVE EVACUATION HIGHWAY</span>
+            </div>
+            <div className="active-route-path-info">
+              <span className="route-endpoint-from">{activeDetailedRoute.from}</span>
+              <ArrowRight size={13} className="route-arrow-icon" />
+              <strong className="route-endpoint-to">{activeDetailedRoute.to}</strong>
+            </div>
+            <div className="active-route-metrics-tag">
+              <span>{activeDetailedRoute.distance_km} km</span>
+              <span className="route-metric-sep">•</span>
+              <span>~{activeDetailedRoute.travel_time_min} mins ETA</span>
+            </div>
             <button
               type="button"
               className="btn-clear-active-route"
               onClick={onClearDetailedRoute}
-              title="Return to National Corridor View"
+              title="Clear route (Esc)"
             >
-              Clear Route
+              <X size={14} />
+              <span>Clear Route</span>
             </button>
           </div>
         ) : (

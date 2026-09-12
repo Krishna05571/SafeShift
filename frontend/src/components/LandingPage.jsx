@@ -113,10 +113,6 @@ export default function LandingPage({
           </nav>
 
           <div className="landing-nav-actions">
-            <div className="live-pulse-badge">
-              <span className="pulse-dot" />
-              <span>{isApiOnline ? 'Live Grid Active' : 'Real-Time Sync Ready'}</span>
-            </div>
             <button
               type="button"
               className="btn-nav-launch"

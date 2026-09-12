@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import threading
 import urllib.request
 import urllib.parse
 from typing import Dict, Any, List, Tuple, Optional
@@ -11,6 +12,7 @@ from shapely.geometry import shape
 CACHE_TTL_SECONDS = 600  # 10 minutes cache TTL
 _weather_cache: Dict[str, Any] = {}
 _last_cache_time: float = 0.0
+_weather_lock = threading.Lock()
 
 # OpenWeatherMap API Key (optional from environment)
 OPENWEATHERMAP_API_KEY = os.getenv("OPENWEATHERMAP_API_KEY", "").strip()
@@ -286,15 +288,19 @@ def get_live_zones_with_weather(geo_data: Dict[str, Any], force_refresh: bool = 
     4. Caches output with 10-minute TTL.
     """
     global _weather_cache, _last_cache_time
-    now = time.time()
     
-    # Check cache validity (10-minute TTL)
-    if not force_refresh and _weather_cache and (now - _last_cache_time < CACHE_TTL_SECONDS):
-        return _weather_cache["geo_data"], _weather_cache["impact_summary"]
+    with _weather_lock:
+        now = time.time()
+        # Fast cache hit: TTL valid or parallel request debounced within 3 seconds
+        if _weather_cache:
+            if not force_refresh and (now - _last_cache_time < CACHE_TTL_SECONDS):
+                return _weather_cache["geo_data"], _weather_cache["impact_summary"]
+            if force_refresh and (now - _last_cache_time < 3.0):
+                return _weather_cache["geo_data"], _weather_cache["impact_summary"]
 
-    features = geo_data.get("features", [])
-    zone_coords: List[Tuple[int, float, float, Dict[str, Any]]] = []
-    pure_coords: List[Tuple[float, float]] = []
+        features = geo_data.get("features", [])
+        zone_coords: List[Tuple[int, float, float, Dict[str, Any]]] = []
+        pure_coords: List[Tuple[float, float]] = []
 
     # Calculate centroids for all features
     for idx, f in enumerate(features):

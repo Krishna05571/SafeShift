@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Sun, Moon, RefreshCw } from 'lucide-react';
 import HazardMap from './components/HazardMap';
 import StatsBar from './components/StatsBar';
 import ZoneDetailsModal from './components/ZoneDetailsModal';
 import DashboardPanel from './components/DashboardPanel';
-import CommandCenterEntry from './components/CommandCenterEntry';
 import SafeShiftLogo from './components/SafeShiftLogo';
 import SmartAlertBanner from './components/SmartAlertBanner';
 import CapacityToastStack from './components/CapacityToastStack';
@@ -24,7 +24,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [isRefreshingWeather, setIsRefreshingWeather] = useState(false);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('split'); // 'split' (default command landing view) | 'dashboard' | 'capacity' | 'map'
+  const [activeTab, setActiveTab] = useState('map'); // 'map' (default GIS Map View) | 'split' | 'dashboard' | 'capacity'
   const [selectedFilters, setSelectedFilters] = useState(['all']); // Multi-select filter layer
 
   const [selectedZone, setSelectedZone] = useState(null);
@@ -54,7 +54,7 @@ function App() {
       zone: zoneProps,
       timestamp: Date.now(),
     });
-    if (activeTab === 'dashboard') {
+    if (activeTab === 'dashboard' || activeTab === 'capacity') {
       setActiveTab('map');
     }
   };
@@ -183,26 +183,33 @@ function App() {
   // Fetch all core datasets
   const fetchAllData = async (forceRefreshWeather = false) => {
     try {
-      setLoading(true);
-      if (forceRefreshWeather) setIsRefreshingWeather(true);
+      if (!geoData) {
+        setLoading(true);
+      }
+      if (forceRefreshWeather) {
+        setIsRefreshingWeather(true);
+      }
       setError(null);
 
-      const [zonesRes, impactRes] = await Promise.all([
+      const isLive = riskMode === 'live';
+      
+      // 1. Fetch live zones, weather impact, and relocation plan concurrently
+      const [zonesRes, impactRes, planRes] = await Promise.all([
         fetch(`${API_BASE_URL}/zones/live?refresh=${forceRefreshWeather}`),
-        fetch(`${API_BASE_URL}/weather-impact?refresh=${forceRefreshWeather}`),
+        fetch(`${API_BASE_URL}/weather-impact?refresh=false`),
+        fetch(`${API_BASE_URL}/relocation-plan?live=${isLive}`),
       ]);
 
       if (!zonesRes.ok) throw new Error(`Zones API error: ${zonesRes.status}`);
-      if (!impactRes.ok) throw new Error(`Weather Impact API error: ${impactRes.status}`);
 
       const zonesData = await zonesRes.json();
-      const impactData = await impactRes.json();
-
       setGeoData(zonesData);
-      setWeatherMeta(impactData);
 
-      const isLive = riskMode === 'live';
-      const planRes = await fetch(`${API_BASE_URL}/relocation-plan?live=${isLive}`);
+      if (impactRes.ok) {
+        const impactData = await impactRes.json();
+        setWeatherMeta(impactData);
+      }
+
       if (planRes.ok) {
         const planData = await planRes.json();
         setRelocationPlan(planData);
@@ -262,24 +269,24 @@ function App() {
     let originCoords = routeItem.origin_coords;
     let destCoords = routeItem.effectiveDestCoords || routeItem.dest_coords;
 
-    // Fallback: Resolve origin coordinates from geoData features if missing
-    if (!originCoords && geoData?.features && routeItem.from) {
+    // Fallback: Resolve origin coordinates from geoData features if missing or invalid
+    if ((!originCoords || !originCoords[0] || isNaN(originCoords[0])) && geoData?.features && routeItem.from) {
       const origFeat = geoData.features.find((f) => f.properties?.area_name === routeItem.from);
-      if (origFeat) {
-        originCoords = [origFeat.properties?.centroid_lat, origFeat.properties?.centroid_lon];
+      if (origFeat?.properties?.centroid_lat && origFeat?.properties?.centroid_lon) {
+        originCoords = [origFeat.properties.centroid_lat, origFeat.properties.centroid_lon];
       }
     }
 
-    // Fallback: Resolve destination coordinates from geoData features if missing
-    if (!destCoords && geoData?.features && (routeItem.effectiveDest || routeItem.to)) {
+    // Fallback: Resolve destination coordinates from geoData features if missing or invalid
+    if ((!destCoords || !destCoords[0] || isNaN(destCoords[0])) && geoData?.features && (routeItem.effectiveDest || routeItem.to)) {
       const targetName = routeItem.effectiveDest || routeItem.to;
       const destFeat = geoData.features.find((f) => f.properties?.area_name === targetName);
-      if (destFeat) {
-        destCoords = [destFeat.properties?.centroid_lat, destFeat.properties?.centroid_lon];
+      if (destFeat?.properties?.centroid_lat && destFeat?.properties?.centroid_lon) {
+        destCoords = [destFeat.properties.centroid_lat, destFeat.properties.centroid_lon];
       }
     }
 
-    if (!originCoords || !destCoords || !originCoords[0] || !destCoords[0]) {
+    if (!originCoords || !destCoords || !originCoords[0] || !destCoords[0] || isNaN(originCoords[0]) || isNaN(destCoords[0])) {
       console.warn('Could not determine valid coordinates for route tracing:', routeItem);
       return;
     }
@@ -307,14 +314,14 @@ function App() {
       });
       setLoadingRoute(false);
       if (activeTab === 'dashboard' || activeTab === 'capacity') {
-        setActiveTab('split');
+        setActiveTab('map');
       }
       return;
     }
 
-    // 3. Switch to split view if currently in standalone dashboard/capacity
+    // 3. Switch to GIS Map View if currently in standalone dashboard/capacity
     if (activeTab === 'dashboard' || activeTab === 'capacity') {
-      setActiveTab('split');
+      setActiveTab('map');
     }
 
     setLoadingRoute(true);
@@ -395,18 +402,6 @@ function App() {
     });
   };
 
-  // Transition from Entry/Setup Screen to Split Command Center with selected initial configuration
-  const handleEnterCommandCenter = ({ scenario, region, riskMode: initialMode }) => {
-    if (scenario) {
-      setSelectedFilters(scenario === 'all' ? ['all'] : [scenario]);
-    }
-    if (initialMode) {
-      setRiskMode(initialMode);
-    }
-    setActiveTab('split'); // <--- Set landing page to Split Command View
-    setAppMode('command');
-  };
-
   // Compute live dataset analytics for quick stats and map legend based on active riskMode
   const stats = useMemo(() => {
     if (!geoData || !geoData.features) {
@@ -450,8 +445,9 @@ function App() {
         else if (r === 'medium') medium += 1;
         else if (r === 'low') low += 1;
 
-        if (props.hazard_type === 'landslide') landslides += 1;
-        if (props.hazard_type === 'flood') floods += 1;
+        const hazardType = (props.hazard_type || '').toLowerCase();
+        if (hazardType.includes('landslide')) landslides += 1;
+        if (hazardType.includes('flood')) floods += 1;
 
         population += Number(props.population) || 0;
       }
@@ -475,23 +471,9 @@ function App() {
     return (
       <LandingPage
         onLaunchCommandCenter={() => {
-          setActiveTab('split');
+          setActiveTab('map');
           setAppMode('command');
         }}
-        onOpenSetup={() => setAppMode('setup')}
-        isApiOnline={!error && Boolean(geoData)}
-      />
-    );
-  }
-
-  // 2. Render Mission Configuration / Setup Screen
-  if (appMode === 'setup') {
-    return (
-      <CommandCenterEntry
-        onEnterCommandCenter={handleEnterCommandCenter}
-        onBackToHome={() => setAppMode('landing')}
-        initialScenario={selectedFilters.includes('all') ? 'all' : selectedFilters[0]}
-        initialRiskMode={riskMode}
         isApiOnline={!error && Boolean(geoData)}
       />
     );
@@ -517,9 +499,10 @@ function App() {
                 <span className="brand-title-navy">Safe</span>
                 <span className="brand-title-green">Shift</span>
               </h1>
+              <span className="sih-badge">GIS LIVE</span>
             </div>
             <p className="brand-subtitle">
-              Multi-Hazard Spatial Relocation & Evacuation Intelligence
+              Multi-Hazard Spatial Relocation &amp; Evacuation Intelligence
             </p>
           </div>
         </div>
@@ -556,25 +539,24 @@ function App() {
           </button>
         </div>
 
-        {/* Theme Toggle, Status & Exit to Config */}
+        {/* Theme Toggle & Actions */}
         <div className="nav-status">
+          {/* Sun / Moon Animated Mode Switch */}
           <button
             type="button"
-            className="theme-toggle-btn"
+            className={`theme-mode-switch ${theme === 'dark' ? 'dark-mode' : 'light-mode'}`}
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            title={
-              theme === 'dark'
-                ? 'Switch to Light Mode'
-                : 'Switch to Dark Mode'
-            }
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label="Toggle Light/Dark Theme"
           >
-            {theme === 'dark' ? 'Light UI' : 'Dark UI'}
+            <div className="theme-switch-track">
+              <Sun size={13} className="theme-sun-icon" />
+              <Moon size={13} className="theme-moon-icon" />
+              <div className="theme-switch-thumb">
+                {theme === 'dark' ? <Moon size={12} /> : <Sun size={12} />}
+              </div>
+            </div>
           </button>
-
-          <div className={`status-indicator ${error ? 'offline' : 'online'}`}>
-            <span className="status-dot" />
-            <span>{error ? 'API Offline' : 'FastAPI Live'}</span>
-          </div>
 
           <button
             type="button"
@@ -583,30 +565,8 @@ function App() {
             disabled={isRefreshingWeather}
             title="Sync live Open-Meteo weather & recompute risks"
           >
-            {isRefreshingWeather ? 'Syncing...' : 'Sync Weather'}
-          </button>
-
-          <button
-            type="button"
-            className="config-exit-btn"
-            onClick={() => setAppMode('setup')}
-            title="Configure Region & Risk Mode Setup"
-          >
-            Setup
-          </button>
-
-          <button
-            type="button"
-            className="config-exit-btn"
-            onClick={() => setAppMode('landing')}
-            title="Return to SafeShift Landing Page"
-            style={{
-              background: theme === 'dark' ? '#334155' : '#f1f5f9',
-              color: theme === 'dark' ? '#f8fafc' : '#1e293b',
-              borderColor: theme === 'dark' ? '#475569' : '#cbd5e1',
-            }}
-          >
-            Landing
+            <RefreshCw size={13} className={isRefreshingWeather ? 'spinning' : ''} />
+            <span>{isRefreshingWeather ? 'Syncing...' : 'Sync Live Weather'}</span>
           </button>
         </div>
       </header>
