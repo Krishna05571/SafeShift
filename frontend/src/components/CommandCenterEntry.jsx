@@ -73,6 +73,7 @@ const REGIONS = [
 
 export default function CommandCenterEntry({
   onEnterCommandCenter,
+  onBackToHome,
   initialScenario = 'multi',
   initialRiskMode = 'baseline',
   isApiOnline = true,
@@ -494,9 +495,27 @@ export default function CommandCenterEntry({
       <div className="scc-bg" />
 
       <div className="scc-topbar">
-        <div className="scc-pill">
-          <span className="scc-dot" style={{ background: '#16A34A' }} />
-          System Status&nbsp;&nbsp;All Systems Operational
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {onBackToHome && (
+            <button
+              type="button"
+              onClick={onBackToHome}
+              className="scc-pill"
+              style={{
+                cursor: 'pointer',
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                fontWeight: 700,
+                color: '#0f172a',
+              }}
+            >
+              ← Back to Home
+            </button>
+          )}
+          <div className="scc-pill">
+            <span className="scc-dot" style={{ background: '#16A34A' }} />
+            System Status&nbsp;&nbsp;All Systems Operational
+          </div>
         </div>
         <div className="scc-pill-group">
           <div className="scc-pill">

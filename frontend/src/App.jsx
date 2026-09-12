@@ -9,13 +9,14 @@ import SmartAlertBanner from './components/SmartAlertBanner';
 import CapacityToastStack from './components/CapacityToastStack';
 import AlternateRoutesModal from './components/AlternateRoutesModal';
 import SafeZoneCapacityPage from './components/SafeZoneCapacityPage';
+import LandingPage from './components/LandingPage';
 import './App.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8005';
 
 function App() {
-  // Command Center Entry Screen State
-  const [inCommandCenter, setInCommandCenter] = useState(false);
+  // Application View Mode: 'landing' (flagship landing page) | 'setup' (config screen) | 'command' (live operations center)
+  const [appMode, setAppMode] = useState('landing');
 
   const [geoData, setGeoData] = useState(null);
   const [relocationPlan, setRelocationPlan] = useState([]);
@@ -394,7 +395,7 @@ function App() {
     });
   };
 
-  // Transition from Entry Screen to Split Command Center with selected initial configuration
+  // Transition from Entry/Setup Screen to Split Command Center with selected initial configuration
   const handleEnterCommandCenter = ({ scenario, region, riskMode: initialMode }) => {
     if (scenario) {
       setSelectedFilters(scenario === 'all' ? ['all'] : [scenario]);
@@ -403,7 +404,7 @@ function App() {
       setRiskMode(initialMode);
     }
     setActiveTab('split'); // <--- Set landing page to Split Command View
-    setInCommandCenter(true);
+    setAppMode('command');
   };
 
   // Compute live dataset analytics for quick stats and map legend based on active riskMode
@@ -469,11 +470,26 @@ function App() {
     };
   }, [geoData, riskMode]);
 
-  // If not entered yet, render the Command Center Entry Screen
-  if (!inCommandCenter) {
+  // 1. Render Flagship Landing Page
+  if (appMode === 'landing') {
+    return (
+      <LandingPage
+        onLaunchCommandCenter={() => {
+          setActiveTab('split');
+          setAppMode('command');
+        }}
+        onOpenSetup={() => setAppMode('setup')}
+        isApiOnline={!error && Boolean(geoData)}
+      />
+    );
+  }
+
+  // 2. Render Mission Configuration / Setup Screen
+  if (appMode === 'setup') {
     return (
       <CommandCenterEntry
         onEnterCommandCenter={handleEnterCommandCenter}
+        onBackToHome={() => setAppMode('landing')}
         initialScenario={selectedFilters.includes('all') ? 'all' : selectedFilters[0]}
         initialRiskMode={riskMode}
         isApiOnline={!error && Boolean(geoData)}
@@ -568,10 +584,24 @@ function App() {
           <button
             type="button"
             className="config-exit-btn"
-            onClick={() => setInCommandCenter(false)}
-            title="Return to Command Center Entry Configuration Screen"
+            onClick={() => setAppMode('setup')}
+            title="Configure Region & Risk Mode Setup"
           >
             Setup
+          </button>
+
+          <button
+            type="button"
+            className="config-exit-btn"
+            onClick={() => setAppMode('landing')}
+            title="Return to SafeShift Landing Page"
+            style={{
+              background: theme === 'dark' ? '#334155' : '#f1f5f9',
+              color: theme === 'dark' ? '#f8fafc' : '#1e293b',
+              borderColor: theme === 'dark' ? '#475569' : '#cbd5e1',
+            }}
+          >
+            Landing
           </button>
         </div>
       </header>
