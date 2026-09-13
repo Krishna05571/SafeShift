@@ -29,4 +29,5 @@ dist-ssr/
 *.sw?
 # Large Data / Precomputed caches
 data/precomputed_routes.json
+backend/data/precomputed_routes.json
 *.cache

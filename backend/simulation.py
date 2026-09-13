@@ -1,10 +1,15 @@
+import sys
 import copy
 import math
 import time
+from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 from shapely.geometry import shape, mapping
-from shapely.ops import transform
-import pyproj
+
+# Ensure local backend directory is on sys.path
+BASE_DIR = Path(__file__).resolve().parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
 
 try:
     from relocation import generate_relocation_plan
@@ -12,10 +17,13 @@ try:
     from safezone_service import safezone_manager
     from routing import get_detailed_route_geometry, calculate_road_metrics
 except ImportError:
-    from .relocation import generate_relocation_plan
-    from .weather_service import get_live_zones_with_weather, _generate_fallback_weather
-    from .safezone_service import safezone_manager
-    from .routing import get_detailed_route_geometry, calculate_road_metrics
+    try:
+        from .relocation import generate_relocation_plan
+        from .weather_service import get_live_zones_with_weather, _generate_fallback_weather
+        from .safezone_service import safezone_manager
+        from .routing import get_detailed_route_geometry, calculate_road_metrics
+    except Exception as e:
+        print(f"Simulation import warning: {e}")
 
 
 def get_risk_gradient_color(hazard_type: str, severity_score: float) -> str:

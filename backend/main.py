@@ -1,29 +1,28 @@
+import sys
+import json
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Ensure backend root directory is on sys.path for direct module discovery
+BASE_DIR = Path(__file__).resolve().parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+# Load environment variables
+ENV_PATH = BASE_DIR / ".env"
+load_dotenv(dotenv_path=ENV_PATH)
+
 from fastapi import FastAPI, Body, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-from pathlib import Path
-from dotenv import load_dotenv
-import json
 
-# Load environment variables
-ENV_PATH = Path(__file__).resolve().parent / ".env"
-load_dotenv(dotenv_path=ENV_PATH)
-
-try:
-    from relocation import generate_relocation_plan
-    from gemini_explainer import explain_relocation_plan
-    from simulation import simulate_disaster_state, project_disaster_scenario
-    from routing import get_detailed_route_geometry
-    from weather_service import get_live_zones_with_weather, fetch_weather_for_coordinate
-    from safezone_service import safezone_manager
-except ImportError:
-    from .relocation import generate_relocation_plan
-    from .gemini_explainer import explain_relocation_plan
-    from .simulation import simulate_disaster_state, project_disaster_scenario
-    from .routing import get_detailed_route_geometry
-    from .weather_service import get_live_zones_with_weather, fetch_weather_for_coordinate
-    from .safezone_service import safezone_manager
+from relocation import generate_relocation_plan
+from gemini_explainer import explain_relocation_plan
+from simulation import simulate_disaster_state, project_disaster_scenario
+from routing import get_detailed_route_geometry
+from weather_service import get_live_zones_with_weather, fetch_weather_for_coordinate
+from safezone_service import safezone_manager
 
 app = FastAPI(
     title="SafeShift Disaster Intelligence API",

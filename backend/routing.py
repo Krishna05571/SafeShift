@@ -16,8 +16,14 @@ _ROUTE_CACHE: Dict[Tuple[float, float, float, float], Tuple[float, float]] = {}
 _GEOMETRY_CACHE: Dict[Tuple[float, float, float, float], Dict[str, Any]] = {}
 
 # Preload high-precision highway route cache from disk for instant zero-latency responses (<1ms)
-PRECOMPUTED_FILE = Path(__file__).resolve().parent.parent / "data" / "precomputed_routes.json"
-if PRECOMPUTED_FILE.exists():
+_base_dir = Path(__file__).resolve().parent
+_candidates = [
+    _base_dir / "data" / "precomputed_routes.json",
+    _base_dir.parent / "data" / "precomputed_routes.json",
+    Path.cwd() / "data" / "precomputed_routes.json",
+]
+PRECOMPUTED_FILE = next((p for p in _candidates if p.exists()), None)
+if PRECOMPUTED_FILE and PRECOMPUTED_FILE.exists():
     try:
         with open(PRECOMPUTED_FILE, "r", encoding="utf-8") as f:
             precomputed_data = json.load(f)
