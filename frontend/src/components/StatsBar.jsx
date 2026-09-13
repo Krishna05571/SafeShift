@@ -105,7 +105,7 @@ export default function StatsBar({
         {/* Live Weather Status Card */}
         <div className="metric-card weather-status-card">
           <div className="metric-content">
-            <span className="metric-label">Live Weather Sync</span>
+            <span className="metric-label">Live Telemetry Status</span>
             <span className="metric-value text-blue" style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <span className="live-weather-pulse" />
               {weatherMeta?.smart_alerts_count > 0

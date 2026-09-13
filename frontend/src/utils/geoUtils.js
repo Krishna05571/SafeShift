@@ -354,3 +354,50 @@ export function buildClientMultiRoutes(originName, originCoords, destName, destC
     alternates,
   };
 }
+
+/**
+ * Generates an initial Safe Zone capacity status object from GeoJSON
+ */
+export function getInitialSafeZoneStatus(geoData) {
+  if (!geoData?.features) return { safe_zones: [], capacity_alerts: [] };
+  const safe_zones = [];
+  geoData.features.forEach((f) => {
+    const p = f.properties || {};
+    if (p.safe === true || p.location_type === 'relocation_site') {
+      const cap = Number(p.capacity || 10000);
+      const c = extractCentroid(f) || [28.7, 77.1];
+      const fill = p.fill_percentage ?? 45;
+      safe_zones.push({
+        name: p.area_name,
+        total_capacity: cap,
+        remaining_capacity: Math.round(cap * (1 - fill / 100)),
+        current_occupancy: Math.round(cap * (fill / 100)),
+        fill_percentage: fill,
+        centroid_lat: c[0],
+        centroid_lon: c[1],
+        location_type: p.location_type || 'relocation_site',
+      });
+    }
+  });
+  return { safe_zones, capacity_alerts: [] };
+}
+
+/**
+ * Fetch wrapper with strict timeout so sleeping backend cold starts never stall the browser
+ */
+export async function fetchWithTimeout(url, options = {}, timeoutMs = 2500) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      ...options,
+      signal: options.signal || controller.signal,
+    });
+    clearTimeout(id);
+    return res;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
