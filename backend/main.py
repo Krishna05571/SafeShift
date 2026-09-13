@@ -40,14 +40,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Robust path resolution for GeoJSON data
+# Robust path resolution for GeoJSON data across local and containerized environments
 BASE_DIR = Path(__file__).resolve().parent
-DATA_PATH = BASE_DIR.parent / "data" / "hazard_zones.geojson"
-if not DATA_PATH.exists():
-    DATA_PATH = BASE_DIR / "data" / "hazard_zones.geojson"
+candidate_paths = [
+    BASE_DIR / "data" / "hazard_zones.geojson",
+    BASE_DIR.parent / "data" / "hazard_zones.geojson",
+    Path.cwd() / "data" / "hazard_zones.geojson",
+    Path.cwd() / "backend" / "data" / "hazard_zones.geojson",
+]
+DATA_PATH = next((p for p in candidate_paths if p.exists()), BASE_DIR / "data" / "hazard_zones.geojson")
 
-with open(DATA_PATH, "r", encoding="utf-8") as f:
-    geo_data = json.load(f)
+try:
+    with open(DATA_PATH, "r", encoding="utf-8") as f:
+        geo_data = json.load(f)
+except Exception as e:
+    print(f"Warning: Could not load GeoJSON from {DATA_PATH}: {e}")
+    geo_data = {"type": "FeatureCollection", "features": []}
 
 # Initialize Safe Zone Capacity State from GeoJSON
 safezone_manager.initialize_from_geojson(geo_data)
