@@ -17,6 +17,7 @@ TABLE OF CONTENTS
 7. Multi-Zone Spillover Rerouting & Alternate Selection Model
 8. Emergency Relocation Triage & Priority Scoring Model
 9. Highway Navigation & Routing Physics Model
+10. Google Gemini AI Situational Intelligence & Operational Directive Evaluation Model
 
 ================================================================================
 1. METEOROLOGICAL INGESTION & LIVE WEATHER MAPPINGS
@@ -264,4 +265,89 @@ Calculates realistic road transit duration and driving distance:
    dx = dest_lon - orig_lon
    dy = dest_lat - orig_lat
    Perpendicular vector: (-dy, dx) scaled by road curvature factor.
+
 ================================================================================
+10. GOOGLE GEMINI AI SITUATIONAL INTELLIGENCE & OPERATIONAL DIRECTIVE EVALUATION MODEL
+================================================================================
+SafeShift synthesizes spatial relocation plans into high-level executive tactical 
+briefings and operational field directives using Google Gemini AI (gemini-2.5-flash-lite / 
+gemini-1.5-flash) backed by a sub-5ms deterministic expert decision engine.
+
+1. EVALUATION MODE DIFFERENTIATION:
+--------------------------------------------------------------------------------
+The situational intelligence engine evaluates plans under two distinct operational paradigms:
+
+A. LIVE REAL-TIME METEOROLOGICAL DISASTER MODE (mode = "live"):
+   - Inputs: Dynamic risk levels derived from Open-Meteo live rainfall accumulation [R], 
+     humidity [H], and IMD Red/Orange alert triggers.
+   - Core KPI Evaluation:
+     * Total Dispatched Evacuees: P_total = Σ(People_i)
+     * Active High-Risk Count: N_high = Σ(1 for zone where Risk == HIGH)
+     * Total Evacuation Corridors: N_corridors = len(RelocationPlan)
+
+B. BASELINE STRUCTURAL & HISTORICAL VULNERABILITY MODE (mode = "baseline"):
+   - Inputs: Intrinsic topographical vulnerability index, elevation delta, river basin 
+     catchment exposure, and permanent hill slope classifications.
+   - Core Focus: Strategic pre-disaster planning, infrastructure fortification, and 
+     contingency safe haven capacity staging.
+
+2. MULTI-TIER OPERATIONAL DIRECTIVE DECISION TREE:
+--------------------------------------------------------------------------------
+The decision engine synthesizes customized field directives based on mode and risk thresholds:
+
+TIER A: ACTIVE METEOROLOGICAL EMERGENCIES (Live Mode AND N_high > 0):
+  Triggered when live rainfall exceeds IMD Red Alert (R >= 115.6mm) or GSI Critical Slope 
+  Saturation (R >= 64.5mm in mountainous terrain).
+  * Executive Summary Focus: Urgent civilian relocation, imminent inundation or debris flow.
+  * Sector Priority Justification: "Live meteorological telemetry escalated this zone to HIGH 
+    risk due to severe precipitation exceeding IMD disaster thresholds. Critical priority score 
+    mandates immediate emergency convoy routing."
+  * Field Directives:
+    1. Deploy immediate NDRF/SDRF evacuation convoys to active High-Risk zones before road inundation worsens.
+    2. Monitor live Open-Meteo precipitation feeds for rainfall exceeding IMD Red Alert (115.6mm) thresholds.
+    3. Enforce green corridors along national highways to ensure convoy travel times stay within estimated windows.
+    4. Alert receiving safe havens to prepare medical triage, drinking water, and high-protein ration reserves.
+
+TIER B: NORMAL WEATHER / STANDBY READINESS (Live Mode AND N_high == 0):
+  Triggered when all monitored sectors exhibit low to moderate precipitation (R < 64.5mm).
+  * Executive Summary Focus: Stable atmospheric state, 0 active catastrophic alerts, routine readiness.
+  * Sector Priority Justification: "Zone is currently at LOW/MEDIUM risk with normal precipitation. 
+    Routine monitoring active; no immediate evacuation required. Evacuation corridor remains 
+    pre-allocated for contingency."
+  * Field Directives (Prevents false alarms and premature mass panic):
+    1. Maintain continuous meteorological telemetry monitoring across low-lying floodplains and steep mountain slopes.
+    2. Keep designated emergency transport convoys and safe shelter intake personnel on standby readiness.
+    3. Verify drainage channel clearances and slope telemetry before precipitation intensifies.
+    4. Ensure emergency communication relays between district emergency operating centers (DEOC) remain active.
+
+TIER C: BASELINE STRUCTURAL & HISTORICAL TRIAGE (Baseline Mode):
+  * Executive Summary Focus: Permanent terrain exposure, low-elevation river catchments, and 
+    long-term demographic vulnerability.
+  * Sector Priority Justification: "Historical baseline vulnerability index designates this zone as 
+    [HIGH/MEDIUM/LOW] risk due to low-lying elevation and high exposure, requiring prioritized emergency clearance."
+  * Field Directives:
+    1. Pre-position disaster response vehicles and emergency shelters in proximity to high-vulnerability sectors.
+    2. Review structural flood defenses and slope reinforcement assets across baseline high-risk corridors.
+    3. Verify safe haven bed capacity readiness (maintaining >10% emergency reserve headroom).
+    4. Switch to 'Live Weather Mode' to incorporate real-time precipitation and dynamic risk surges.
+
+3. IN-MEMORY CACHE FORMULATION & LATENCY GUARANTEE:
+--------------------------------------------------------------------------------
+To prevent API rate-limiting and ensure zero-lag transitions (<1ms) when switching 
+between live weather and baseline views on the command dashboard:
+
+  Cache Key: k = f"{mode}_{P_total}_{N_high}"
+  Cache TTL: 300 seconds (5 minutes)
+
+  If now - Cache[k].timestamp < TTL:
+      return Cache[k].data (Instantaneous retrieval: < 1ms)
+  Else:
+      Execute Gemini LLM request (Timeout: 1.8s) -> Fallback to Rule Engine (< 5ms) on timeout/error.
+
+4. CLEAN TYPOGRAPHY & ZERO-EMOJI NDMA STANDARD:
+--------------------------------------------------------------------------------
+All situational summaries, sector reasons, and operational directives are enforced to follow 
+formal National Disaster Management Authority (NDMA) reporting standards without emojis or 
+informal symbols.
+================================================================================
+

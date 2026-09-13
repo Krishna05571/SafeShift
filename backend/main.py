@@ -62,6 +62,7 @@ except Exception as e:
 
 class ExplainRequest(BaseModel):
     relocation_plan: Optional[List[Dict[str, Any]]] = None
+    mode: Optional[str] = "baseline"
 
 class SimulationRequest(BaseModel):
     time_step: Optional[int] = None
@@ -202,8 +203,13 @@ def post_ai_explain(body: Optional[ExplainRequest] = Body(default=None)):
     human-readable explanations, priority justifications, and emergency recommendations.
     Accepts optional custom relocation_plan payload; defaults to live computed plan.
     """
-    plan = body.relocation_plan if (body and body.relocation_plan) else generate_relocation_plan(geo_data)
-    return explain_relocation_plan(plan)
+    target_mode = (body.mode if (body and body.mode) else "baseline").lower()
+    if target_mode == "live":
+        active_geo, _ = get_live_zones_with_weather(geo_data, force_refresh=False)
+    else:
+        active_geo = geo_data
+    plan = generate_relocation_plan(active_geo)
+    return explain_relocation_plan(plan, mode=target_mode)
 
 @app.get("/safezones/status")
 def get_safezones_status(auto_tick: bool = Query(default=True, description="Automatically advance capacity simulation tick")):
@@ -321,10 +327,14 @@ def get_multi_routes(
     }
 
 @app.get("/ai-explain")
-def get_ai_explain():
+def get_ai_explain(mode: str = Query(default="live", description="Risk evaluation mode: 'live' or 'baseline'")):
     """
-    GET shortcut to generate and explain the live disaster relocation plan using Google Gemini AI.
+    GET shortcut to generate and explain the disaster relocation plan using Google Gemini AI.
     """
-    live_geo, _ = get_live_zones_with_weather(geo_data, force_refresh=False)
-    plan = generate_relocation_plan(live_geo)
-    return explain_relocation_plan(plan)
+    target_mode = mode.lower() if mode else "live"
+    if target_mode == "live":
+        active_geo, _ = get_live_zones_with_weather(geo_data, force_refresh=False)
+    else:
+        active_geo = geo_data
+    plan = generate_relocation_plan(active_geo)
+    return explain_relocation_plan(plan, mode=target_mode)

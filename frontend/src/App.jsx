@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Sun, Moon, RefreshCw } from 'lucide-react';
+import { Sun, Moon, RefreshCw, Sparkles } from 'lucide-react';
 import HazardMap from './components/HazardMap';
 import StatsBar from './components/StatsBar';
 import ZoneDetailsModal from './components/ZoneDetailsModal';
@@ -10,6 +10,7 @@ import CapacityToastStack from './components/CapacityToastStack';
 import AlternateRoutesModal from './components/AlternateRoutesModal';
 import SafeZoneCapacityPage from './components/SafeZoneCapacityPage';
 import LandingPage from './components/LandingPage';
+import AIBriefingModal from './components/AIBriefingModal';
 import './App.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8005';
@@ -39,6 +40,7 @@ function App() {
   const [activeMultiRoutes, setActiveMultiRoutes] = useState(null);
   const [selectedMultiRouteChoice, setSelectedMultiRouteChoice] = useState('primary');
   const [showAltRoutesModal, setShowAltRoutesModal] = useState(false);
+  const [showAIBriefingModal, setShowAIBriefingModal] = useState(false);
 
   // Detailed Highway Routing State (On-Demand Curved Polyline)
   const [activeDetailedRoute, setActiveDetailedRoute] = useState(null);
@@ -560,6 +562,16 @@ function App() {
 
           <button
             type="button"
+            className="ai-briefing-btn"
+            onClick={() => setShowAIBriefingModal(true)}
+            title="Open Gemini AI Situational & Evacuation Briefing"
+          >
+            <Sparkles size={13} className="ai-btn-sparkle" />
+            <span>AI Briefing</span>
+          </button>
+
+          <button
+            type="button"
             className="refresh-btn"
             onClick={() => fetchAllData(true)}
             disabled={isRefreshingWeather}
@@ -775,6 +787,17 @@ function App() {
           theme={theme}
         />
       )}
+
+      {/* Gemini AI Situational & Evacuation Briefing Full-Screen View */}
+      <AIBriefingModal
+        isOpen={showAIBriefingModal}
+        onClose={() => setShowAIBriefingModal(false)}
+        riskMode={riskMode}
+        onToggleRiskMode={setRiskMode}
+        relocationPlan={relocationPlan}
+        onLocateZone={handleLocateZone}
+        theme={theme}
+      />
     </div>
   );
 }

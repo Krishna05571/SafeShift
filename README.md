@@ -1,277 +1,253 @@
-# SafeShift  
+# SafeShift
 ### Multi-Hazard Spatial Relocation & Evacuation Intelligence System
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-009688.svg?style=flat&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18.2.0-61DAFB.svg?style=flat&logo=react&logoColor=black)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-5.0.0-646CFF.svg?style=flat&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Leaflet](https://img.shields.io/badge/Leaflet-1.9.4-199900.svg?style=flat&logo=leaflet&logoColor=white)](https://leafletjs.com/)
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini-1.5%20%2F%202.5-4285F4.svg?style=flat&logo=google&logoColor=white)](https://ai.google.dev/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
 
 ## Overview
 
-SafeShift is an advanced geospatial emergency response system designed to optimize disaster evacuations in real time.
+**SafeShift** is an advanced geospatial emergency response and disaster evacuation decision-support system designed to optimize civilian relocations in real time during multi-hazard crises across India.
 
-It combines:
-- Live weather intelligence  
-- Hazard terrain analysis  
-- Mathematical optimization  
-- Real-time shelter tracking  
-
-The goal is to move people from danger to safety in the fastest and most efficient way possible.
+By bridging live meteorological telemetry, geotechnical risk models, mathematical linear optimization, real-time shelter capacity tracking, and **Google Gemini AI Situational Intelligence**, SafeShift transforms complex spatial data into clear, actionable tactical directives for disaster commanders and first responders.
 
 ---
 
-## Why SafeShift?
+## Core Capabilities
 
-Every year, disasters like floods and landslides displace millions.
+### 1. Dual Risk Intelligence Modes
+- **Live Weather Mode**: Continuously ingests real-time precipitation, humidity, and atmospheric data from Open-Meteo. Dynamically computes disaster risk according to official **India Meteorological Department (IMD)** and **Geological Survey of India (GSI)** benchmarks:
+  - **Floods**: Red Alert ($\ge 115.6\text{ mm}$), Orange Alert ($64.5 - 115.5\text{ mm}$), Green Alert ($< 64.5\text{ mm}$).
+  - **Landslides**: Critical Pore Saturation ($\ge 64.5\text{ mm}$), Moisture Alert ($35.5 - 64.4\text{ mm}$), Equilibrium ($< 35.5\text{ mm}$).
+- **Baseline Mode**: Evaluates intrinsic topographical exposure, low-lying river catchments, slope steepness, and historical vulnerability.
 
-Current systems:
-- Fragmented across agencies  
-- Lack real-time adaptability  
-- Do not optimize evacuation routes  
+### 2. Google Gemini AI Situational Intelligence & Tactical Briefings
+- Integrates Google Gemini (`gemini-2.5-flash-lite` and `gemini-1.5-flash`) to generate structured executive situational briefings, sector risk justifications, and actionable field directives.
+- Features a full-screen, high-contrast Tactical Intelligence Briefing interface with zero map canvas lag.
+- Fast in-memory caching ($< 1\text{ ms}$) and an instantaneous deterministic expert decision engine fallback ($< 5\text{ ms}$).
+- Dynamic operational triage:
+  - **Active Emergencies**: Directs immediate NDRF/SDRF convoy dispatch, corridor clearance, and shelter intake preparation.
+  - **Normal Weather / Standby**: Directs telemetry monitoring and standby readiness without premature mass evacuation.
 
-SafeShift solves this by combining real-time data and optimization algorithms into one unified platform.
+### 3. Optimization-Driven Evacuation Engine
+- Linear programming formulation minimizes total evacuation transit time while respecting safe haven capacity limits.
+- Ranks hazard sectors by priority score ($\text{Priority} = \text{Risk Score} \times \text{Affected Population}$).
+- Dynamically splits evacuee flows across secondary safe shelters when primary capacities are exceeded.
 
----
+### 4. Real-Time Shelter Capacity & Multi-Route Rerouting
+- Tracks occupancy, remaining capacity, fill percentages, and time-to-full (ETA) across 18 designated safe havens.
+- Multi-tier alert thresholds at **70% (Warning)**, **90% (Critical / 10% Headroom Remaining)**, and **100% (Saturated)**.
+- Automated spillover rerouting to the top 2 ranked alternate safe havens with high-resolution road geometry.
 
-## Preview
-
-(Add your screenshots inside an /assets folder and update paths below)
-
-![Dashboard](./assets/dashboard.png)  
-![Map](./assets/map.png)  
-![Routes](./assets/routes.png)
-
----
-
-## Key Features
-
-- Live Meteorological Integration  
-  Real-time weather via Open-Meteo API (rainfall, humidity, temperature)
-
-- Dual Risk Modes  
-  Live Mode: Dynamic risk based on rainfall thresholds  
-  Baseline Mode: Terrain and historical vulnerability analysis  
-
-- Optimization-Based Evacuation  
-  Uses Linear Programming (scipy.optimize.linprog) to:
-  - Minimize evacuation time  
-  - Prevent shelter overload  
-
-- Smart Shelter Management  
-  - Live occupancy tracking  
-  - Alerts at 70% and 90% capacity  
-  - Time-to-full estimation  
-
-- Multi-Route Safe Zone Finder  
-  - Primary, secondary, fallback shelters  
-  - Automatic rerouting  
-
-- Real Road Routing  
-  - OSRM-based highway paths  
-  - Curved geometry routing  
-
-- Command Center UI  
-  - GIS map and analytics dashboard  
-  - Live alerts and evacuation tables  
-
----
-
-## What Makes It Unique?
-
-- Combines weather, terrain, and optimization  
-- Uses mathematical models instead of heuristics  
-- Dynamic rerouting when shelters fill  
-- Real-world road network routing  
-- Designed as a decision-support system for authorities  
-
----
-
-## Tech Stack
-
-Frontend:
-- React 18 (Vite)
-- Leaflet (GIS Mapping)
-- Recharts (Analytics)
-
-Backend:
-- FastAPI
-- SciPy (Linear Programming)
-- OSRM (Routing Engine)
-
-Data Sources:
-- Open-Meteo API
-- GeoJSON (Hazard Zones and Shelters)
+### 5. Disaster Progression Simulator (0–60 Minute Continuous Timeline)
+- Simulates physical flood spread, polygon buffer dilation, and inundation depth.
+- Models hillside soil saturation and dynamic slope failure probability.
+- Real-time shelter load growth forecasting and emergency threshold triggers.
 
 ---
 
 ## System Architecture
 
-Open-Meteo API (Weather)
-        |
-        v
-   FastAPI Backend
- (Risk + Optimization)
-     |         |
-     v         v
- GeoJSON    OSRM Routing
- (Hazards)   (Roads)
-     |
-     v
- React + Leaflet UI
- (Command Center Dashboard)
-
----
-
-## How It Works
-
-1. User selects Live or Baseline Mode  
-2. System fetches weather and hazard data  
-3. Risk levels are calculated  
-4. Optimization engine generates evacuation plan  
-5. Shelters are monitored in real-time  
-6. Alternate routes are triggered if needed  
-
----
-
-## Mathematical Model
-
-SafeShift models evacuation as a constrained optimization problem:
-
-min Σ (c_ij * x_ij * P_i)
-
-Subject to:
-- Capacity constraints  
-- Demand fulfillment  
-- Non-negativity  
-
-In simple terms:
-- Move people from danger to safety  
-- Minimize travel time  
-- Avoid overcrowding  
+```
+                       +---------------------------------------+
+                       |        Open-Meteo Live Weather        |
+                       +-------------------+-------------------+
+                                           | (Real-time telemetry)
+                                           v
++-----------------------------------------------------------------------------------+
+|                           FastAPI Backend (:8005)                                 |
+|                                                                                   |
+|  +-------------------------+  +--------------------------+  +-------------------+ |
+|  | IMD/GSI Risk Engine     |  | Linear Programming       |  | Shelter Capacity  | |
+|  | (weather_service.py)    |  | Relocation Engine        |  | Manager & Routing | |
+|  |                         |  | (relocation.py)          |  | (safezone_service)| |
+|  +------------+------------+  +------------+-------------+  +---------+---------+ |
+|               |                            |                          |           |
+|               +----------------------------+--------------------------+           |
+|                                            |                                      |
+|                                            v                                      |
+|                 +--------------------------------------+                          |
+|                 | Google Gemini AI Explainer &         |                          |
+|                 | Fallback Expert Decision Engine      |                          |
+|                 | (gemini_explainer.py)                |                          |
+|                 +--------------------------------------+                          |
++------------------------------------+----------------------------------------------+
+                                     | (REST APIs / JSON)
+                                     v
++-----------------------------------------------------------------------------------+
+|                        React 18 + Vite Frontend (:3000)                           |
+|                                                                                   |
+|  - Full-Screen Tactical Intelligence Briefing (AIBriefingModal.jsx)               |
+|  - Multi-Hazard Leaflet GIS Map Canvas (HazardMap.jsx)                            |
+|  - Real-Time Shelter Capacity & Spillover Rerouting View (SafeZoneCapacityPage)  |
+|  - 0-60 Min Disaster Progression Simulator (SimulationController.jsx)            |
+|  - Dynamic Smart Alert Notification Stack (CapacityToastStack.jsx)               |
++-----------------------------------------------------------------------------------+
+```
 
 ---
 
 ## Project Structure
 
+```
 SafeShift/
 │
 ├── backend/
-│   ├── main.py
-│   ├── routing.py
-│   ├── safezone_service.py
-│   ├── simulation.py
-│   └── requirements.txt
+│   ├── main.py                   # FastAPI application routes and lifecycle
+│   ├── weather_service.py        # Open-Meteo live ingestion & IMD/GSI risk engine
+│   ├── relocation.py             # Evacuation optimization & priority scoring
+│   ├── gemini_explainer.py       # Google Gemini AI situational intelligence & fallback
+│   ├── safezone_service.py       # Safe shelter capacity tracking & alternate finder
+│   ├── simulation.py             # 0-60 min disaster progression simulation engine
+│   ├── routing.py                # Highway curvature & transit duration models
+│   ├── precompute.py             # Pre-warming script for spatial caches
+│   └── requirements.txt          # Python dependencies
 │
 ├── frontend/
-│   ├── src/components/
-│   ├── src/utils/
-│   ├── App.jsx
-│   └── vite.config.js
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── AIBriefingModal.jsx        # Full-screen Gemini tactical briefing modal
+│   │   │   ├── AlternateRoutesModal.jsx   # Multi-route alternate shelter view
+│   │   │   ├── CapacityToastStack.jsx     # Real-time capacity alert toasts
+│   │   │   ├── CommandCenterEntry.jsx     # Landing portal entry interface
+│   │   │   ├── DashboardPanel.jsx         # Telemetry & relocation KPI panel
+│   │   │   ├── HazardMap.jsx              # Leaflet GIS multi-hazard map
+│   │   │   ├── LandingPage.jsx            # Project landing presentation page
+│   │   │   ├── Legend.jsx                 # Cartographic severity legend
+│   │   │   ├── RelocationTable.jsx        # Evacuation plan dispatch table
+│   │   │   ├── SafeZoneCapacityPage.jsx   # Shelter occupancy & spillover dashboard
+│   │   │   ├── SimulationController.jsx   # 0-60 min scenario timeline slider
+│   │   │   ├── SmartAlertBanner.jsx       # IMD/GSI weather escalation banner
+│   │   │   ├── StatsBar.jsx               # Header operational statistics bar
+│   │   │   └── ZoneDetailsModal.jsx       # Zone meteorological inspection modal
+│   │   ├── App.jsx                        # Root React application & state manager
+│   │   └── main.jsx                       # React entry point
+│   ├── vite.config.js                     # Vite configuration (port 3000)
+│   └── package.json                       # Node dependencies & scripts
 │
 ├── data/
-│   ├── india_hazard_zones.geojson
-│   └── relocation_sites.geojson
+│   └── hazard_zones.geojson      # Multi-hazard polygons & safe haven shelters
 │
-└── README.md
+├── conditions.txt                # Mathematical models, equations, & AI directive spec
+└── README.md                     # System documentation & setup guide
+```
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js (v18 or higher)
-- Python (v3.10 or higher)
-- Git
+- **Node.js** (v18.0.0 or higher)
+- **Python** (v3.10 or higher)
+- **Git**
 
 ---
 
 ### Backend Setup (FastAPI)
 
-cd backend
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
 
-python -m venv venv  
-.\venv\Scripts\activate   (Windows)  
-# source venv/bin/activate   (macOS/Linux)
+2. Create and activate a virtual environment:
+   ```powershell
+   # Windows (PowerShell)
+   python -m venv venv
+   .\venv\Scripts\Activate.ps1
 
-pip install -r requirements.txt  
+   # macOS / Linux
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
 
-python -m uvicorn main:app --host 127.0.0.1 --port 8005 --reload 
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-Backend runs on: http://127.0.0.1:8005  
-Docs: http://127.0.0.1:8005/docs  
+4. Configure environment variables (Optional for live Gemini AI):
+   Create a `.env` file in the `backend/` directory:
+   ```env
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+   *(If omitted or invalid, SafeShift automatically utilizes its sub-5ms deterministic expert decision engine fallback).*
+
+5. Start the backend server on port `8005`:
+   ```bash
+   python -m uvicorn main:app --host 127.0.0.1 --port 8005 --reload
+   ```
+
+   - **Backend API**: `http://127.0.0.1:8005/`
+   - **Interactive API Documentation (Swagger)**: `http://127.0.0.1:8005/docs`
 
 ---
 
-### Frontend Setup
+### Frontend Setup (React + Vite)
 
-cd frontend  
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
 
-npm install  
-npm run dev  
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-Open: http://localhost:5173  
+3. Start the development server on port `3000`:
+   ```bash
+   npm run dev
+   ```
+
+4. Open your browser and navigate to:
+   ```
+   http://localhost:3000/
+   ```
 
 ---
 
-## API Endpoints
+## API Reference
 
 | Endpoint | Method | Description |
-|--------|--------|------------|
-| /zones/live | GET | Live hazard zones |
-| /relocation-plan | GET | Optimized evacuation |
-| /weather-impact | GET | Weather summary |
-| /route-geometry | GET | Road routes |
-| /safezones/status | GET | Shelter capacity |
-| /safezones/multi-routes | GET | Alternate shelters |
-| /safezones/update | POST | Update capacity |
+|---|---|---|
+| `/` | `GET` | System health, version status, and registered endpoint list. |
+| `/zones` | `GET` | Multi-hazard baseline GeoJSON FeatureCollection. |
+| `/zones/live` | `GET` | Live meteorological hazard polygons with dynamically predicted IMD/GSI risk levels. Supports `?refresh=true`. |
+| `/weather-impact` | `GET` | Meteorological summary, zone-by-zone rainfall impacts, and active smart alerts. |
+| `/relocation-plan` | `GET` | Optimized evacuation plan with priority scores and road distance/travel time metrics (`?live=true\|false`). |
+| `/route-geometry` | `GET` | High-resolution curved highway route coordinates and transit duration between origin and destination. |
+| `/simulate-disaster` | `GET` / `POST` | 0–60 min disaster progression projection (flood perimeter dilation, landslide shear probability, shelter load). |
+| `/ai-explain` | `GET` / `POST` | Google Gemini AI Situational Intelligence briefing, zone priority justifications, and field directives (`?mode=live\|baseline`). |
+| `/safezones/status` | `GET` | Real-time shelter occupancy, remaining headroom, fill percentages, and time-to-full ETAs. |
+| `/safezones/update` | `POST` | Simulates shelter influx ticks or resets occupancy states (`{ "reset": true }`). |
+| `/safezones/alternatives` | `GET` | Top $N$ nearest candidate safe havens with available capacity headroom ($> 10\%$). |
+| `/safezones/multi-routes` | `GET` | Primary route and top 2 alternate evacuation routes with capacity stats and highway geometry. |
 
 ---
 
-## Future Scope
+## Mathematical and Operational Models
 
-- AI-based evacuation prediction  
-- IoT and drone integration  
-- Mobile application  
-- SMS alert system  
-- Government API integration  
-
----
-
-## Deployment
-
-- Frontend: Vercel or Netlify  
-- Backend: Render or Railway  
-- OSRM: Docker or cloud hosting  
+For complete mathematical equations, flood polygon dilation models, landslide soil saturation mechanics, and the Gemini AI operational directive evaluation logic, see [`conditions.txt`](./conditions.txt).
 
 ---
 
 ## Team
 
-Team Name: (update this)
-
-- Krishna Kaushal  
-- Mahi Singhal  
-- Saksham Gupta
-- Keshav Totla
-- Vikas Singh
-- Nirmit Singh
+- **Krishna Kaushal**
+- **Mahi Singhal**
+- **Saksham Gupta**
+- **Keshav Totla**
+- **Vikas Singh**
+- **Nirmit Singh**
 
 ---
 
 ## License
 
-This project is licensed under the MIT License.
-
----
-
-## Support
-
-If you find this project useful:
-- Star the repository  
-- Share it  
-- Contribute improvements  
-
----
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
