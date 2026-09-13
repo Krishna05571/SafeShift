@@ -11,6 +11,7 @@ import AlternateRoutesModal from './components/AlternateRoutesModal';
 import SafeZoneCapacityPage from './components/SafeZoneCapacityPage';
 import LandingPage from './components/LandingPage';
 import AIBriefingModal from './components/AIBriefingModal';
+import defaultGeoData from './data/hazard_zones.json';
 import './App.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8005';
@@ -19,10 +20,10 @@ function App() {
   // Application View Mode: 'landing' (flagship landing page) | 'setup' (config screen) | 'command' (live operations center)
   const [appMode, setAppMode] = useState('landing');
 
-  const [geoData, setGeoData] = useState(null);
+  const [geoData, setGeoData] = useState(defaultGeoData);
   const [relocationPlan, setRelocationPlan] = useState([]);
   const [weatherMeta, setWeatherMeta] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isRefreshingWeather, setIsRefreshingWeather] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('map'); // 'map' (default GIS Map View) | 'split' | 'dashboard' | 'capacity'
