@@ -180,7 +180,7 @@ export default function LandingPage({
               </div>
               <div className="hero-metric-item">
                 <h4>10 min</h4>
-                <p>Open-Meteo Weather Sync</p>
+                <p>Open-Meteo Telemetry</p>
               </div>
             </div>
           </div>
