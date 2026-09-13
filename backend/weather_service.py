@@ -170,35 +170,34 @@ def fetch_batch_weather_for_coordinates(coords: List[Tuple[float, float]]) -> Di
             f"latitude={lats_str}&longitude={lons_str}&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code"
             f"&daily=precipitation_sum&timezone=auto&forecast_days=1"
         )
-        req = urllib.request.Request(url, headers={"User-Agent": "SafeShift-Disaster-Intelligence/2.0"})
-        with urllib.request.urlopen(req, timeout=2.8) as response:
-            if response.status == 200:
-                raw_data = json.loads(response.read().decode("utf-8"))
-                item_list = raw_data if isinstance(raw_data, list) else [raw_data]
-                for idx, data in enumerate(item_list):
-                    if idx < len(coords):
-                        current = data.get("current", {})
-                        daily = data.get("daily", {})
-                        daily_precip = 0.0
-                        if "precipitation_sum" in daily and daily["precipitation_sum"]:
-                            daily_precip = float(daily["precipitation_sum"][0] or 0.0)
-                        current_rain = float(current.get("precipitation", current.get("rain", 0.0)) or 0.0)
-                        rainfall_mm = max(daily_precip, round(current_rain * 12.0, 1))
-                        humidity = int(current.get("relative_humidity_2m", 70))
-                        temp = round(float(current.get("temperature_2m", 25.0)), 1)
-                        wmo_code = int(current.get("weather_code", 3))
-                        weather_desc = _get_wmo_weather_description(wmo_code)
-                        results[idx] = {
-                            "rainfall": round(rainfall_mm, 1),
-                            "rainfall_1h": current_rain,
-                            "humidity": humidity,
-                            "temperature": temp,
-                            "weather": weather_desc,
-                            "source": "Open-Meteo Live Meteorological Feed",
-                            "timestamp": int(time.time()),
-                        }
-                if len(results) == len(coords):
-                    return results
+        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0 SafeShift-Disaster-Intelligence"}, timeout=1.2)
+        if resp.status_code == 200:
+            raw_data = resp.json()
+            item_list = raw_data if isinstance(raw_data, list) else [raw_data]
+            for idx, data in enumerate(item_list):
+                if idx < len(coords):
+                    current = data.get("current", {})
+                    daily = data.get("daily", {})
+                    daily_precip = 0.0
+                    if "precipitation_sum" in daily and daily["precipitation_sum"]:
+                        daily_precip = float(daily["precipitation_sum"][0] or 0.0)
+                    current_rain = float(current.get("precipitation", current.get("rain", 0.0)) or 0.0)
+                    rainfall_mm = max(daily_precip, round(current_rain * 12.0, 1))
+                    humidity = int(current.get("relative_humidity_2m", 70))
+                    temp = round(float(current.get("temperature_2m", 25.0)), 1)
+                    wmo_code = int(current.get("weather_code", 3))
+                    weather_desc = _get_wmo_weather_description(wmo_code)
+                    results[idx] = {
+                        "rainfall": round(rainfall_mm, 1),
+                        "rainfall_1h": current_rain,
+                        "humidity": humidity,
+                        "temperature": temp,
+                        "weather": weather_desc,
+                        "source": "Open-Meteo Live Meteorological Feed",
+                        "timestamp": int(time.time()),
+                    }
+            if len(results) == len(coords):
+                return results
     except Exception as e:
         print(f"Batch weather request skipped to fast fallback: {e}")
 

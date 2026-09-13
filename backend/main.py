@@ -59,11 +59,6 @@ except Exception as e:
 # Initialize Safe Zone Capacity State from GeoJSON
 safezone_manager.initialize_from_geojson(geo_data)
 
-# Pre-warm weather cache on initialization for instantaneous API responses (<1ms)
-try:
-    get_live_zones_with_weather(geo_data, force_refresh=False)
-except Exception as e:
-    print(f"Initial weather pre-warm notice: {e}")
 
 
 

@@ -41,12 +41,21 @@ export default function ZoneDetailsModal({
 
   const handleTraceHighway = (routeItem) => {
     if (!onTraceRoute || !routeItem) return;
+    const originCoords =
+      routeItem.origin_coords ||
+      (zone.centroid_lat && zone.centroid_lon ? [Number(zone.centroid_lat), Number(zone.centroid_lon)] : null) ||
+      (zone.lat && zone.lon ? [Number(zone.lat), Number(zone.lon)] : null);
+
+    const destCoords =
+      routeItem.effectiveDestCoords ||
+      routeItem.dest_coords;
+
     const routePayload = {
       ...routeItem,
       from: routeItem.from || zone.area_name,
       to: routeItem.effectiveDest || routeItem.to,
-      origin_coords: routeItem.origin_coords || [zone.centroid_lat, zone.centroid_lon],
-      dest_coords: routeItem.dest_coords || routeItem.effectiveDestCoords,
+      origin_coords: originCoords,
+      dest_coords: destCoords,
     };
     onTraceRoute(routePayload);
   };

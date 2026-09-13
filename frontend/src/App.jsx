@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Sun, Moon, RefreshCw, Sparkles } from 'lucide-react';
+import { Sun, Moon, Sparkles } from 'lucide-react';
 import HazardMap from './components/HazardMap';
 import StatsBar from './components/StatsBar';
 import ZoneDetailsModal from './components/ZoneDetailsModal';
@@ -12,16 +12,27 @@ import SafeZoneCapacityPage from './components/SafeZoneCapacityPage';
 import LandingPage from './components/LandingPage';
 import AIBriefingModal from './components/AIBriefingModal';
 import defaultGeoData from './data/hazard_zones.json';
+import {
+  extractCentroid,
+  enrichGeoJsonWithCentroids,
+  haversineDistanceKm,
+  generateCurvedHighwayGeometry,
+  generateClientRelocationPlan,
+  buildClientMultiRoutes,
+} from './utils/geoUtils';
 import './App.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8005';
+
+const initialGeoData = enrichGeoJsonWithCentroids(defaultGeoData);
+const initialRelocationPlan = generateClientRelocationPlan(initialGeoData, 'baseline');
 
 function App() {
   // Application View Mode: 'landing' (flagship landing page) | 'setup' (config screen) | 'command' (live operations center)
   const [appMode, setAppMode] = useState('landing');
 
-  const [geoData, setGeoData] = useState(defaultGeoData);
-  const [relocationPlan, setRelocationPlan] = useState([]);
+  const [geoData, setGeoData] = useState(initialGeoData);
+  const [relocationPlan, setRelocationPlan] = useState(initialRelocationPlan);
   const [weatherMeta, setWeatherMeta] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isRefreshingWeather, setIsRefreshingWeather] = useState(false);
@@ -98,7 +109,7 @@ function App() {
 
     // Find origin hazard zone or match
     let originZone = null;
-    let matchedPlan = relocationPlan.find((p) => p.to === targetInfo.name);
+    let matchedPlan = relocationPlan.find((p) => p.to === targetInfo.name || p.effectiveDest === targetInfo.name);
 
     if (matchedPlan) {
       originZone = {
@@ -107,13 +118,13 @@ function App() {
         lon: matchedPlan.origin_coords ? matchedPlan.origin_coords[1] : targetInfo.lon,
       };
     } else if (geoData?.features) {
-      const hazardFeat = geoData.features.find((f) => !f.properties?.safe);
-      if (hazardFeat && hazardFeat.geometry) {
-        const p = hazardFeat.properties || {};
+      const hazardFeat = geoData.features.find((f) => !f.properties?.safe && f.properties?.location_type !== 'relocation_site');
+      if (hazardFeat) {
+        const c = extractCentroid(hazardFeat);
         originZone = {
-          name: p.area_name || 'Active Hazard Zone',
-          lat: p.centroid_lat || 20.59,
-          lon: p.centroid_lon || 78.96,
+          name: hazardFeat.properties?.area_name || 'Active Hazard Zone',
+          lat: c ? c[0] : 20.59,
+          lon: c ? c[1] : 78.96,
         };
       }
     }
@@ -121,25 +132,41 @@ function App() {
     const oLat = originZone?.lat || 28.61;
     const oLon = originZone?.lon || 77.20;
     const oName = originZone?.name || 'Hazard Origin';
-    const dLat = targetInfo.lat || 28.70;
-    const dLon = targetInfo.lon || 77.10;
+    const dLat = targetInfo.lat || (targetInfo.dest_coords ? targetInfo.dest_coords[0] : 28.70);
+    const dLon = targetInfo.lon || (targetInfo.dest_coords ? targetInfo.dest_coords[1] : 77.10);
     const dName = targetInfo.name || 'Safe Haven';
 
+    // 1. Instantly construct multi-routes client-side so modal opens with 0 lag
+    const instantMultiRoutes = buildClientMultiRoutes(
+      oName,
+      [oLat, oLon],
+      dName,
+      [dLat, dLon],
+      geoData,
+      safeZoneStatus
+    );
+
+    setActiveMultiRoutes(instantMultiRoutes);
+    setSelectedMultiRouteChoice('primary');
+    setShowAltRoutesModal(true);
+
+    if (activeTab === 'dashboard' || activeTab === 'capacity') {
+      setActiveTab('map');
+    }
+
+    // 2. Fetch high-precision routes in background from routing engine if available
     try {
       setLoadingRoute(true);
       const url = `${API_BASE_URL}/safezones/multi-routes?origin_lat=${oLat}&origin_lon=${oLon}&origin_name=${encodeURIComponent(oName)}&dest_lat=${dLat}&dest_lon=${dLon}&dest_name=${encodeURIComponent(dName)}`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
-        setActiveMultiRoutes(data);
-        setSelectedMultiRouteChoice('primary');
-        setShowAltRoutesModal(true);
-        if (activeTab === 'dashboard') {
-          setActiveTab('map');
+        if (data && data.primary) {
+          setActiveMultiRoutes(data);
         }
       }
     } catch (err) {
-      console.error('Error fetching multi-routes:', err);
+      console.warn('Using client-calculated multi-corridors:', err);
     } finally {
       setLoadingRoute(false);
     }
@@ -148,14 +175,18 @@ function App() {
   // Switch Active Corridor
   const handleSelectMultiRouteChoice = (choiceId, routeObj) => {
     setSelectedMultiRouteChoice(choiceId);
-    if (routeObj) {
+    if (routeObj && routeObj.coordinates) {
       setActiveDetailedRoute({
         coordinates: routeObj.coordinates,
         distance_km: routeObj.distance_km,
         travel_time_min: routeObj.travel_time_min,
         from: activeMultiRoutes?.origin?.name || 'Hazard Origin',
         to: routeObj.name,
+        source: routeObj.source || 'Alternative Evacuation Corridor',
       });
+      if (activeTab === 'dashboard' || activeTab === 'capacity') {
+        setActiveTab('map');
+      }
     }
   };
 
@@ -167,7 +198,7 @@ function App() {
 
     setRelocationPlan((prevPlan) =>
       prevPlan.map((item) => {
-        if (item.to === origHaven) {
+        if (item.to === origHaven || item.effectiveDest === origHaven) {
           return {
             ...item,
             effectiveDest: newHaven,
@@ -180,6 +211,22 @@ function App() {
         return item;
       })
     );
+
+    // Also draw the new route on the map and switch to map view
+    if (selectedChoice.coordinates) {
+      setActiveDetailedRoute({
+        coordinates: selectedChoice.coordinates,
+        distance_km: selectedChoice.distance_km,
+        travel_time_min: selectedChoice.travel_time_min,
+        from: activeMultiRoutes?.origin?.name || 'Hazard Origin',
+        to: selectedChoice.name,
+        source: selectedChoice.source || 'Selected Alternate Corridor',
+      });
+      if (activeTab === 'dashboard' || activeTab === 'capacity') {
+        setActiveTab('map');
+      }
+    }
+
     setShowAltRoutesModal(false);
   };
 
@@ -295,20 +342,17 @@ function App() {
     let destCoords = routeItem.effectiveDestCoords || routeItem.dest_coords;
 
     // Fallback: Resolve origin coordinates from geoData features if missing or invalid
-    if ((!originCoords || !originCoords[0] || isNaN(originCoords[0])) && geoData?.features && routeItem.from) {
-      const origFeat = geoData.features.find((f) => f.properties?.area_name === routeItem.from);
-      if (origFeat?.properties?.centroid_lat && origFeat?.properties?.centroid_lon) {
-        originCoords = [origFeat.properties.centroid_lat, origFeat.properties.centroid_lon];
-      }
+    if ((!originCoords || !originCoords[0] || isNaN(originCoords[0])) && routeItem.from) {
+      const origFeat = geoData?.features?.find((f) => f.properties?.area_name === routeItem.from);
+      originCoords = extractCentroid(origFeat) || [28.61, 77.20];
     }
 
     // Fallback: Resolve destination coordinates from geoData features if missing or invalid
-    if ((!destCoords || !destCoords[0] || isNaN(destCoords[0])) && geoData?.features && (routeItem.effectiveDest || routeItem.to)) {
+    if ((!destCoords || !destCoords[0] || isNaN(destCoords[0])) && (routeItem.effectiveDest || routeItem.to)) {
       const targetName = routeItem.effectiveDest || routeItem.to;
-      const destFeat = geoData.features.find((f) => f.properties?.area_name === targetName);
-      if (destFeat?.properties?.centroid_lat && destFeat?.properties?.centroid_lon) {
-        destCoords = [destFeat.properties.centroid_lat, destFeat.properties.centroid_lon];
-      }
+      const destFeat = geoData?.features?.find((f) => f.properties?.area_name === targetName);
+      const safeMatch = safeZoneStatus?.safe_zones?.find((sz) => sz.name === targetName);
+      destCoords = extractCentroid(destFeat) || (safeMatch ? [safeMatch.centroid_lat, safeMatch.centroid_lon] : null) || [28.70, 77.10];
     }
 
     if (!originCoords || !destCoords || !originCoords[0] || !destCoords[0] || isNaN(originCoords[0]) || isNaN(destCoords[0])) {
@@ -316,20 +360,31 @@ function App() {
       return;
     }
 
-    // 1. Immediately cancel any previous in-flight route fetch to eliminate buffering and race conditions
+    const [origin_lat, origin_lon] = originCoords;
+    const [dest_lat, dest_lon] = destCoords;
+    const cacheKey = `${origin_lat.toFixed(4)}_${origin_lon.toFixed(4)}_${dest_lat.toFixed(4)}_${dest_lon.toFixed(4)}`;
+    const fromName = routeItem.from || 'Hazard Zone';
+    const toName = routeItem.effectiveDest || routeItem.to || 'Safe Haven';
+
+    // 1. Immediately switch to GIS Map View
+    if (activeTab === 'dashboard' || activeTab === 'capacity') {
+      setActiveTab('map');
+    }
+
+    // 2. Generate instant curved Bezier highway geometry (0ms latency)
+    const directCurve = generateCurvedHighwayGeometry([origin_lat, origin_lon], [dest_lat, dest_lon], 30);
+    const crowDist = haversineDistanceKm(origin_lat, origin_lon, dest_lat, dest_lon);
+    const estDistance = routeItem.distance_km || Math.round(crowDist * 1.3);
+    const estDuration = routeItem.travel_time_min || Math.round((estDistance / 50) * 60);
+
+    // 3. Cancel any previous in-flight route fetch to eliminate race conditions
     if (routeAbortControllerRef.current) {
       routeAbortControllerRef.current.abort();
     }
     const abortController = new AbortController();
     routeAbortControllerRef.current = abortController;
 
-    const [origin_lat, origin_lon] = originCoords;
-    const [dest_lat, dest_lon] = destCoords;
-    const cacheKey = `${origin_lat.toFixed(4)}_${origin_lon.toFixed(4)}_${dest_lat.toFixed(4)}_${dest_lon.toFixed(4)}`;
-    const fromName = routeItem.from;
-    const toName = routeItem.effectiveDest || routeItem.to;
-
-    // 2. Check client-side memory cache for instantaneous zero-latency render
+    // Check client-side memory cache for instantaneous zero-latency render
     if (routeGeometryCacheRef.current[cacheKey]) {
       const cached = routeGeometryCacheRef.current[cacheKey];
       setActiveDetailedRoute({
@@ -338,16 +393,18 @@ function App() {
         to: toName,
       });
       setLoadingRoute(false);
-      if (activeTab === 'dashboard' || activeTab === 'capacity') {
-        setActiveTab('map');
-      }
       return;
     }
 
-    // 3. Switch to GIS Map View if currently in standalone dashboard/capacity
-    if (activeTab === 'dashboard' || activeTab === 'capacity') {
-      setActiveTab('map');
-    }
+    // Set immediate instant route so user sees navigation right away
+    setActiveDetailedRoute({
+      coordinates: directCurve,
+      distance_km: estDistance,
+      travel_time_min: estDuration,
+      from: fromName,
+      to: toName,
+      source: 'Direct Transit Corridor',
+    });
 
     setLoadingRoute(true);
 
@@ -360,7 +417,7 @@ function App() {
       const data = await res.json();
 
       // Only apply update if this specific request is still the active one
-      if (!abortController.signal.aborted) {
+      if (!abortController.signal.aborted && data && Array.isArray(data.coordinates) && data.coordinates.length > 0) {
         routeGeometryCacheRef.current[cacheKey] = data;
         setActiveDetailedRoute({
           ...data,
@@ -370,19 +427,7 @@ function App() {
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
-        console.error('Error fetching highway route geometry:', err);
-        // Fallback on hard network error
-        setActiveDetailedRoute({
-          coordinates: [
-            [origin_lat, origin_lon],
-            [dest_lat, dest_lon],
-          ],
-          distance_km: routeItem.distance_km || Math.round(Math.hypot(dest_lat - origin_lat, dest_lon - origin_lon) * 111),
-          travel_time_min: routeItem.travel_time_min || Math.round(((routeItem.distance_km || 100) / 50) * 60),
-          from: fromName,
-          to: toName,
-          source: 'Direct Evacuation Corridor',
-        });
+        console.warn('Using client-rendered highway corridor:', err);
       }
     } finally {
       if (!abortController.signal.aborted) {
@@ -591,17 +636,6 @@ function App() {
           >
             <Sparkles size={13} className="ai-btn-sparkle" />
             <span>AI Briefing</span>
-          </button>
-
-          <button
-            type="button"
-            className="refresh-btn"
-            onClick={() => fetchAllData(true)}
-            disabled={isRefreshingWeather}
-            title="Sync live Open-Meteo weather & recompute risks"
-          >
-            <RefreshCw size={13} className={isRefreshingWeather ? 'spinning' : ''} />
-            <span>{isRefreshingWeather ? 'Syncing...' : 'Sync Live Weather'}</span>
           </button>
         </div>
       </header>

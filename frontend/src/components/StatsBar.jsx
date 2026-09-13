@@ -105,20 +105,7 @@ export default function StatsBar({
         {/* Live Weather Status Card */}
         <div className="metric-card weather-status-card">
           <div className="metric-content">
-            <div className="weather-metric-top">
-              <span className="metric-label">Live Weather Sync</span>
-              {onRefreshWeather && (
-                <button
-                  type="button"
-                  className="btn-quick-weather-sync"
-                  onClick={() => onRefreshWeather(true)}
-                  disabled={isRefreshingWeather}
-                  title="Sync real-time rainfall & recalculate disaster risks"
-                >
-                  {isRefreshingWeather ? 'Syncing...' : 'Sync'}
-                </button>
-              )}
-            </div>
+            <span className="metric-label">Live Weather Sync</span>
             <span className="metric-value text-blue" style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <span className="live-weather-pulse" />
               {weatherMeta?.smart_alerts_count > 0
