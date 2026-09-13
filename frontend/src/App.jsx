@@ -652,12 +652,6 @@ function App() {
 
       {/* Main Container */}
       <main className="app-main">
-        {loading && !geoData && (
-          <div className="map-loading-overlay">
-            <div className="spinner" />
-            <p>Loading multi-hazard spatial data & real-time weather predictions...</p>
-          </div>
-        )}
 
         {error && !geoData && (
           <div className="map-error-banner">

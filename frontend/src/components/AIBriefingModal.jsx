@@ -221,34 +221,8 @@ export default function AIBriefingModal({
 
       {/* Main Full-Screen Content Area */}
       <main className="ai-fullscreen-content">
-        {loading && !briefing && (
-          <div className="ai-fullscreen-loading">
-            <div className="ai-loading-spinner-box">
-              <Bot size={36} className="ai-bot-icon-anim" />
-              <div className="ai-spinner-ring" />
-            </div>
-            <h3>Synthesizing Multi-Hazard Disaster Report...</h3>
-            <p>Analyzing {relocationPlan?.length || 0} active evacuation routes across {isLive ? 'live weather feeds' : 'historical vulnerability models'}.</p>
-          </div>
-        )}
-
-        {error && !briefing && (
-          <div className="ai-fullscreen-error">
-            <AlertTriangle size={36} className="error-icon" />
-            <h3>Briefing Generation Notice</h3>
-            <p>{error}</p>
-            <button
-              type="button"
-              className="ai-retry-action-btn"
-              onClick={() => fetchBriefing(activeMode)}
-            >
-              Retry Synthesizing
-            </button>
-          </div>
-        )}
-
         {briefing && (
-          <div className={`ai-briefing-layout ${loading ? 'content-refreshing' : ''}`}>
+          <div className="ai-briefing-layout">
             {/* 1. Top Executive KPI & Summary Row */}
             <div className="ai-top-section">
               {/* Executive Summary Card */}
