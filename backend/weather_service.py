@@ -210,17 +210,17 @@ def fetch_batch_weather_for_coordinates(coords: List[Tuple[float, float]]) -> Di
 
 def predict_risk(zone_properties: Dict[str, Any], weather_data: Dict[str, Any]) -> Tuple[str, str, int, Optional[str]]:
     """
-    Dynamic Disaster Risk Prediction Logic:
+    Dynamic Disaster Risk Prediction Logic based on official IMD & GSI standards:
     
-    For FLOODS:
-    - If rainfall > 100mm -> HIGH risk (Priority: 'immediate')
-    - If rainfall 50-100mm -> MEDIUM risk (Priority: 'short-term')
-    - Else -> LOW risk (Priority: 'monitoring')
+    For FLOODS (IMD 24h Precipitation Scale):
+    - If rainfall >= 115.6mm -> HIGH risk (IMD 'Very Heavy / Extremely Heavy' - Red Alert / Priority: 'immediate')
+    - If rainfall >= 64.5mm -> MEDIUM risk (IMD 'Heavy Rain' - Orange Alert / Priority: 'short-term')
+    - Else (< 64.5mm) -> LOW risk (IMD 'Light / Moderate Rain' / Priority: 'monitoring')
     
-    For LANDSLIDES:
-    - If rainfall > 80mm AND (slope / mountain terrain) -> HIGH risk (Priority: 'immediate')
-    - If rainfall > 40mm -> MEDIUM risk (Priority: 'short-term')
-    - Else -> LOW risk (Priority: 'monitoring')
+    For LANDSLIDES (GSI Slope Saturation Guidelines):
+    - If rainfall >= 64.5mm AND mountain slope -> HIGH risk (Critical pore pressure saturation / Priority: 'immediate')
+    - If rainfall >= 35.5mm -> MEDIUM risk (Antecedent soil moisture alert / Priority: 'short-term')
+    - Else (< 35.5mm) -> LOW risk (Priority: 'monitoring')
     
     Returns:
     - predicted_risk: 'high' | 'medium' | 'low'
@@ -238,12 +238,12 @@ def predict_risk(zone_properties: Dict[str, Any], weather_data: Dict[str, Any]) 
     alert_message = None
 
     if hazard_type == "flood":
-        if rainfall > 100.0:
+        if rainfall >= 115.6:
             predicted_risk = "high"
             priority = "immediate"
             if initial_risk != "high":
-                alert_message = f"🚨 Heavy rainfall ({rainfall}mm) detected. Flood risk escalated to HIGH in {area_name}."
-        elif rainfall >= 50.0:
+                alert_message = f"🚨 IMD Red Alert: Very Heavy rainfall ({rainfall}mm) detected. Flood risk escalated to HIGH in {area_name}."
+        elif rainfall >= 64.5:
             predicted_risk = "medium"
             priority = "short-term"
         else:
@@ -251,12 +251,12 @@ def predict_risk(zone_properties: Dict[str, Any], weather_data: Dict[str, Any]) 
             priority = "monitoring"
             
     elif hazard_type == "landslide":
-        if rainfall > 80.0:
+        if rainfall >= 64.5:
             predicted_risk = "high"
             priority = "immediate"
             if initial_risk != "high":
-                alert_message = f"⛰️ Severe precipitation ({rainfall}mm) on mountain terrain. Landslide risk surged to HIGH in {area_name}."
-        elif rainfall >= 40.0:
+                alert_message = f"⛰️ GSI Warning: Critical slope saturation ({rainfall}mm rain). Landslide risk surged to HIGH in {area_name}."
+        elif rainfall >= 35.5:
             predicted_risk = "medium"
             priority = "short-term"
         else:
@@ -264,10 +264,10 @@ def predict_risk(zone_properties: Dict[str, Any], weather_data: Dict[str, Any]) 
             priority = "monitoring"
             
     else:
-        if rainfall > 90.0:
+        if rainfall >= 115.6:
             predicted_risk = "high"
             priority = "immediate"
-        elif rainfall >= 45.0:
+        elif rainfall >= 64.5:
             predicted_risk = "medium"
             priority = "short-term"
         else:

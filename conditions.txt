@@ -42,41 +42,42 @@ WMO Weather Code Classification:
   - 80, 81, 82: Slight / Moderate / Violent Rain Showers
   - 95, 96, 99: Thunderstorm / Severe Hailstorm
 
-================================================================================
-2. BASELINE & LIVE WEATHER RISK PREDICTION RULES
+=================================================================================
+2. BASELINE & LIVE WEATHER RISK PREDICTION RULES (IMD & GSI COMPLIANT)
 ================================================================================
 Dynamic disaster risk prediction categorizes zones based on hazard type and 
-live meteorological thresholds:
+official India Meteorological Department (IMD) & Geological Survey of India (GSI)
+meteorological thresholds:
 
-A. FLOOD HAZARD CLASSIFICATION:
+A. FLOOD HAZARD CLASSIFICATION (Official IMD 24h Rainfall Scale):
 --------------------------------------------------------------------------------
-| Rainfall Accumulation (R) | Predicted Risk | Action Priority | Risk Score (W) |
-|---------------------------|----------------|-----------------|----------------|
-| R > 100.0 mm              | HIGH           | immediate       | 3              |
-| 50.0 mm <= R <= 100.0 mm  | MEDIUM         | short-term      | 2              |
-| R < 50.0 mm               | LOW            | monitoring      | 1              |
+| Rainfall Accumulation (R) | Predicted Risk | Action Priority | Risk Score (W) | IMD Warning Level |
+|---------------------------|----------------|-----------------|----------------|-------------------|
+| R >= 115.6 mm             | HIGH           | immediate       | 3              | Red Alert (Very Heavy/Extremely Heavy)|
+| 64.5 mm <= R < 115.6 mm   | MEDIUM         | short-term      | 2              | Orange Alert (Heavy Rain)|
+| R < 64.5 mm               | LOW            | monitoring      | 1              | Green Alert (Light/Moderate Rain)|
 
-* Alert Trigger: When R > 100mm and baseline risk was not High:
-  "Heavy rainfall (>100mm) detected. Flood risk escalated to HIGH."
+* Alert Trigger: When R >= 115.6mm and baseline risk was not High:
+  "🚨 IMD Red Alert: Very Heavy rainfall (>=115.6mm) detected. Flood risk escalated to HIGH."
 
-B. LANDSLIDE HAZARD CLASSIFICATION (Mountain / Slope Terrain):
+B. LANDSLIDE HAZARD CLASSIFICATION (GSI Hill Slope Saturation Guidelines):
 --------------------------------------------------------------------------------
-| Rainfall Accumulation (R) | Predicted Risk | Action Priority | Risk Score (W) |
-|---------------------------|----------------|-----------------|----------------|
-| R > 80.0 mm               | HIGH           | immediate       | 3              |
-| 40.0 mm <= R <= 80.0 mm   | MEDIUM         | short-term      | 2              |
-| R < 40.0 mm               | LOW            | monitoring      | 1              |
+| Rainfall Accumulation (R) | Predicted Risk | Action Priority | Risk Score (W) | Geotechnical State|
+|---------------------------|----------------|-----------------|----------------|-------------------|
+| R >= 64.5 mm              | HIGH           | immediate       | 3              | Critical Pore Saturation / Debris Flow|
+| 35.5 mm <= R < 64.5 mm    | MEDIUM         | short-term      | 2              | Antecedent Moisture Inundation Alert|
+| R < 35.5 mm               | LOW            | monitoring      | 1              | Normal Slope Equilibrium|
 
-* Alert Trigger: When R > 80mm on mountain terrain:
-  "Severe precipitation (>80mm) on mountain terrain. Landslide risk surged to HIGH."
+* Alert Trigger: When R >= 64.5mm on mountain terrain:
+  "⛰️ GSI Warning: Critical slope saturation (>=64.5mm rain). Landslide risk surged to HIGH."
 
 C. CYCLONE / GENERAL STORM SURGE:
 --------------------------------------------------------------------------------
 | Rainfall Accumulation (R) | Predicted Risk | Action Priority | Risk Score (W) |
 |---------------------------|----------------|-----------------|----------------|
-| R > 90.0 mm               | HIGH           | immediate       | 3              |
-| 45.0 mm <= R <= 90.0 mm   | MEDIUM         | short-term      | 2              |
-| R < 45.0 mm               | LOW            | monitoring      | 1              |
+| R >= 115.6 mm             | HIGH           | immediate       | 3              |
+| 64.5 mm <= R < 115.6 mm   | MEDIUM         | short-term      | 2              |
+| R < 64.5 mm               | LOW            | monitoring      | 1              |
 
 ================================================================================
 3. DYNAMIC FLOOD SPREAD & POLYGON INUNDATION MODEL
