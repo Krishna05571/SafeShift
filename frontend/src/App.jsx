@@ -182,7 +182,7 @@ function App() {
     setShowAltRoutesModal(false);
   };
 
-  // Fetch all core datasets
+  // Fetch all core datasets with resilient fallback
   const fetchAllData = async (forceRefreshWeather = false) => {
     try {
       if (!geoData) {
@@ -195,30 +195,52 @@ function App() {
 
       const isLive = riskMode === 'live';
       
-      // 1. Fetch live zones, weather impact, and relocation plan concurrently
-      const [zonesRes, impactRes, planRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/zones/live?refresh=${forceRefreshWeather}`),
-        fetch(`${API_BASE_URL}/weather-impact?refresh=false`),
-        fetch(`${API_BASE_URL}/relocation-plan?live=${isLive}`),
-      ]);
-
-      if (!zonesRes.ok) throw new Error(`Zones API error: ${zonesRes.status}`);
-
-      const zonesData = await zonesRes.json();
-      setGeoData(zonesData);
-
-      if (impactRes.ok) {
-        const impactData = await impactRes.json();
-        setWeatherMeta(impactData);
+      // 1. Fetch live zones
+      try {
+        const zonesRes = await fetch(`${API_BASE_URL}/zones/live?refresh=${forceRefreshWeather}`);
+        if (zonesRes.ok) {
+          const zonesData = await zonesRes.json();
+          setGeoData(zonesData);
+        } else if (!geoData) {
+          // Fallback to baseline /zones if /zones/live is warming up
+          const fallbackRes = await fetch(`${API_BASE_URL}/zones`);
+          if (fallbackRes.ok) {
+            const fallbackData = await fallbackRes.json();
+            setGeoData(fallbackData);
+          }
+        }
+      } catch (zoneErr) {
+        console.warn('Zone fetch warning:', zoneErr);
+        if (!geoData) {
+          try {
+            const fallbackRes = await fetch(`${API_BASE_URL}/zones`);
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json();
+              setGeoData(fallbackData);
+            }
+          } catch (e) {
+            // Will trigger error state below
+          }
+        }
       }
 
-      if (planRes.ok) {
-        const planData = await planRes.json();
-        setRelocationPlan(planData);
-      }
+      // 2. Fetch weather impact summary in parallel
+      fetch(`${API_BASE_URL}/weather-impact?refresh=false`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => data && setWeatherMeta(data))
+        .catch((err) => console.warn('Weather impact fetch warning:', err));
+
+      // 3. Fetch relocation plan in parallel
+      fetch(`${API_BASE_URL}/relocation-plan?live=${isLive}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => data && setRelocationPlan(data))
+        .catch((err) => console.warn('Relocation plan fetch warning:', err));
+
     } catch (err) {
       console.error('Error fetching data:', err);
-      setError(err.message || 'Failed to load disaster data');
+      if (!geoData) {
+        setError(err.message || 'Connecting to disaster intelligence backend...');
+      }
     } finally {
       setLoading(false);
       setIsRefreshingWeather(false);

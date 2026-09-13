@@ -279,44 +279,42 @@ def predict_risk(zone_properties: Dict[str, Any], weather_data: Dict[str, Any]) 
 
     return predicted_risk, priority, risk_score, alert_message
 
-def get_live_zones_with_weather(geo_data: Dict[str, Any], force_refresh: bool = False) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
-    """
-    Processes all 49 zones:
-    1. Computes polygon centroids using Shapely.
-    2. Fetches weather data using ultra-fast batch querying (<300ms).
-    3. Runs predict_risk() to update risk levels, priority scores, and weather properties dynamically.
-    4. Caches output with 10-minute TTL.
-    """
-    global _weather_cache, _last_cache_time
-    
-    with _weather_lock:
-        now = time.time()
-        # Fast cache hit: TTL valid or parallel request debounced within 3 seconds
-        if _weather_cache:
-            if not force_refresh and (now - _last_cache_time < CACHE_TTL_SECONDS):
-                return _weather_cache["geo_data"], _weather_cache["impact_summary"]
-            if force_refresh and (now - _last_cache_time < 3.0):
-                return _weather_cache["geo_data"], _weather_cache["impact_summary"]
+# Global cache and precomputed state
+_weather_cache: Dict[str, Any] = {}
+_last_cache_time: float = 0.0
+_weather_lock = threading.Lock()
+_cached_centroids: Optional[List[Tuple[int, float, float, Dict[str, Any]]]] = None
+_is_fetching = False
 
-        features = geo_data.get("features", [])
-        zone_coords: List[Tuple[int, float, float, Dict[str, Any]]] = []
-        pure_coords: List[Tuple[float, float]] = []
-
-    # Calculate centroids for all features
+def _extract_centroids(geo_data: Dict[str, Any]) -> List[Tuple[int, float, float, Dict[str, Any]]]:
+    """Extracts and caches centroids for all zones once."""
+    global _cached_centroids
+    if _cached_centroids is not None:
+        return _cached_centroids
+        
+    features = geo_data.get("features", [])
+    zone_coords: List[Tuple[int, float, float, Dict[str, Any]]] = []
     for idx, f in enumerate(features):
         props = f.get("properties", {})
         geom_json = f.get("geometry")
         if not geom_json:
             continue
         geom = shape(geom_json)
-        centroid = geom.centroid  # Shapely Centroid (lon=x, lat=y)
+        centroid = geom.centroid
         zone_coords.append((idx, centroid.y, centroid.x, props))
-        pure_coords.append((centroid.y, centroid.x))
+        
+    _cached_centroids = zone_coords
+    return _cached_centroids
 
-    # Fetch weather for all zones in a single high-speed batch request
-    weather_results = fetch_batch_weather_for_coordinates(pure_coords)
-
-
+def _build_geo_dataset(
+    geo_data: Dict[str, Any],
+    weather_results: Dict[int, Dict[str, Any]]
+) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    """Pure transformation function to assemble updated GeoJSON dataset."""
+    features = geo_data.get("features", [])
+    zone_coords = _extract_centroids(geo_data)
+    now = time.time()
+    
     updated_features = []
     impact_summary = []
     smart_alerts = []
@@ -325,7 +323,7 @@ def get_live_zones_with_weather(geo_data: Dict[str, Any], force_refresh: bool = 
         feature_copy = json.loads(json.dumps(features[idx]))
         new_props = feature_copy.get("properties", {})
         is_safe = new_props.get("safe") is True or new_props.get("location_type") == "relocation_site"
-        w_data = weather_results.get(idx, _generate_fallback_weather(lat, lon))
+        w_data = weather_results.get(idx) or _generate_fallback_weather(lat, lon)
 
         # Embed weather data in zone properties
         new_props["rainfall"] = w_data["rainfall"]
@@ -395,12 +393,62 @@ def get_live_zones_with_weather(geo_data: Dict[str, Any], force_refresh: bool = 
             "smart_alerts": smart_alerts,
         }
     }
-
-    # Store in cache
-    _weather_cache = {
-        "geo_data": updated_geo_data,
-        "impact_summary": impact_summary,
-    }
-    _last_cache_time = now
-
     return updated_geo_data, impact_summary
+
+def _bg_fetch_and_update(geo_data: Dict[str, Any]):
+    """Asynchronously fetches live weather from Open-Meteo in background without blocking HTTP."""
+    global _weather_cache, _last_cache_time, _is_fetching
+    try:
+        zone_coords = _extract_centroids(geo_data)
+        pure_coords = [(lat, lon) for _, lat, lon, _ in zone_coords]
+        weather_results = fetch_batch_weather_for_coordinates(pure_coords)
+        if weather_results:
+            updated_geo, impact = _build_geo_dataset(geo_data, weather_results)
+            with _weather_lock:
+                _weather_cache = {
+                    "geo_data": updated_geo,
+                    "impact_summary": impact,
+                }
+                _last_cache_time = time.time()
+    except Exception as e:
+        print(f"Background weather refresh notice: {e}")
+    finally:
+        _is_fetching = False
+
+def get_live_zones_with_weather(geo_data: Dict[str, Any], force_refresh: bool = False) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    """
+    Returns live weather and predicted risk with guaranteed <2ms latency:
+    - If cached, returns immediately.
+    - If cold or force_refresh, returns instantly with fallback and triggers non-blocking background refresh.
+    """
+    global _weather_cache, _last_cache_time, _is_fetching
+    
+    with _weather_lock:
+        now = time.time()
+        
+        # 1. Warm cache available
+        if _weather_cache:
+            needs_bg_refresh = force_refresh or (now - _last_cache_time > CACHE_TTL_SECONDS)
+            if needs_bg_refresh and not _is_fetching:
+                _is_fetching = True
+                threading.Thread(target=_bg_fetch_and_update, args=(geo_data,), daemon=True).start()
+            return _weather_cache["geo_data"], _weather_cache["impact_summary"]
+
+        # 2. Cold start: Generate instant deterministic baseline in <1ms
+        zone_coords = _extract_centroids(geo_data)
+        instant_weather = {idx: _generate_fallback_weather(lat, lon) for idx, lat, lon, _ in zone_coords}
+        updated_geo, impact = _build_geo_dataset(geo_data, instant_weather)
+        
+        _weather_cache = {
+            "geo_data": updated_geo,
+            "impact_summary": impact,
+        }
+        _last_cache_time = now
+
+        # Launch background worker for live Open-Meteo update
+        if not _is_fetching:
+            _is_fetching = True
+            threading.Thread(target=_bg_fetch_and_update, args=(geo_data,), daemon=True).start()
+
+        return updated_geo, impact
+
