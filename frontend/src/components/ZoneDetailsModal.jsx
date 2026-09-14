@@ -14,6 +14,7 @@ export default function ZoneDetailsModal({
   if (!zone) return null;
 
   const isSafe = zone.safe === true || zone.location_type === 'relocation_site';
+  const hasLiveProps = zone.rainfall !== undefined && zone.rainfall !== null;
 
   // Initial immediate fallback weather (0ms latency guarantee)
   const initialFallback = getZoneFallbackWeather(zone) || {
@@ -24,27 +25,39 @@ export default function ZoneDetailsModal({
   };
 
   const [liveWeather, setLiveWeather] = useState({
-    rainfall: zone.rainfall !== undefined ? Number(zone.rainfall) : initialFallback.rainfall,
+    rainfall: hasLiveProps ? Number(zone.rainfall) : initialFallback.rainfall,
     humidity: zone.humidity !== undefined ? Number(zone.humidity) : initialFallback.humidity,
     temperature: zone.temperature !== undefined ? Number(zone.temperature) : initialFallback.temperature,
     weather: zone.weather || initialFallback.weather,
-    source: zone.rainfall !== undefined ? 'Live Telemetry' : 'IMD Telemetry Forecast',
+    source: hasLiveProps ? 'Open-Meteo Live API' : 'IMD Telemetry Forecast',
   });
 
-  // Fetch real-time Open-Meteo data client-side in background
+  // Keep liveWeather in sync with selected zone
   useEffect(() => {
     let isMounted = true;
-    const fallback = getZoneFallbackWeather(zone);
-    if (fallback) {
-      setLiveWeather((prev) => ({
-        rainfall: zone.rainfall !== undefined ? Number(zone.rainfall) : fallback.rainfall,
-        humidity: zone.humidity !== undefined ? Number(zone.humidity) : fallback.humidity,
-        temperature: zone.temperature !== undefined ? Number(zone.temperature) : fallback.temperature,
-        weather: zone.weather || fallback.weather,
-        source: zone.rainfall !== undefined ? 'Live Telemetry' : 'IMD Telemetry Forecast',
-      }));
+    const hasProps = zone.rainfall !== undefined && zone.rainfall !== null;
+
+    if (hasProps) {
+      // Zone already has official telemetry from /zones/live
+      setLiveWeather({
+        rainfall: Number(zone.rainfall),
+        humidity: Number(zone.humidity ?? 75),
+        temperature: Number(zone.temperature ?? 26),
+        weather: zone.weather || 'Normal',
+        source: 'Open-Meteo Live API',
+      });
+      return;
     }
 
+    const fallback = getZoneFallbackWeather(zone);
+    if (fallback) {
+      setLiveWeather({
+        ...fallback,
+        source: 'IMD Telemetry Forecast',
+      });
+    }
+
+    // Only fetch from client Open-Meteo if zone properties had no live rainfall
     const lat = zone.centroid_lat || zone.lat;
     const lon = zone.centroid_lon || zone.lon;
     if (lat && lon) {
@@ -62,11 +75,11 @@ export default function ZoneDetailsModal({
     };
   }, [zone]);
 
-  const rainfall = liveWeather.rainfall !== undefined ? Number(liveWeather.rainfall) : initialFallback.rainfall;
-  const humidity = liveWeather.humidity !== undefined ? Number(liveWeather.humidity) : initialFallback.humidity;
-  const temp = liveWeather.temperature !== undefined ? Number(liveWeather.temperature) : initialFallback.temperature;
-  const weather = liveWeather.weather || initialFallback.weather;
-  const weatherSource = liveWeather.source || 'Open-Meteo Live API';
+  const rainfall = liveWeather.rainfall !== undefined ? Number(liveWeather.rainfall) : (zone.rainfall !== undefined ? Number(zone.rainfall) : initialFallback.rainfall);
+  const humidity = liveWeather.humidity !== undefined ? Number(liveWeather.humidity) : (zone.humidity !== undefined ? Number(zone.humidity) : initialFallback.humidity);
+  const temp = liveWeather.temperature !== undefined ? Number(liveWeather.temperature) : (zone.temperature !== undefined ? Number(zone.temperature) : initialFallback.temperature);
+  const weather = liveWeather.weather || zone.weather || initialFallback.weather;
+  const weatherSource = liveWeather.source || (hasLiveProps ? 'Open-Meteo Live API' : 'IMD Telemetry Forecast');
 
   // Dynamic Risk & Priority Evaluation:
   // In Live Weather Mode, evaluates strictly against official IMD & GSI benchmarks from real-time rainfall
@@ -83,6 +96,15 @@ export default function ZoneDetailsModal({
     }
 
     // Live Weather Mode:
+    // If zone already has live risk & rainfall from /zones/live, maintain exact 1:1 synchronization with map
+    if (zone.risk && zone.rainfall !== undefined) {
+      const liveRisk = String(zone.risk).toLowerCase();
+      const livePriority =
+        zone.priority || (liveRisk === 'high' ? 'immediate' : liveRisk === 'medium' ? 'short-term' : 'monitoring');
+      return { risk: liveRisk, priority: livePriority };
+    }
+
+    // Otherwise calculate dynamically from live rainfall according to official IMD & GSI scales
     const rMm = Number(rainfall || 0);
     const hazardType = (zone.hazard_type || 'landslide').toLowerCase();
 

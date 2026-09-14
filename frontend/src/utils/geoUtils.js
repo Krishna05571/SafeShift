@@ -556,6 +556,7 @@ export const DEFAULT_ZONE_WEATHER = {
   'Kalimpong - Teesta Gorge (WB)': { rainfall: 96.5, humidity: 88, temperature: 19.2, weather: 'Heavy rain' },
   'Cherrapunji - Khasi Hills (Meghalaya)': { rainfall: 148.0, humidity: 96, temperature: 20.5, weather: 'Extreme continuous downpour' },
   'Assam Brahmaputra Basin - Majuli': { rainfall: 132.0, humidity: 93, temperature: 27.5, weather: 'Severe riverine inundation' },
+  'Kosi Inundation Belt - Supaul (Bihar)': { rainfall: 122.7, humidity: 94, temperature: 29.1, weather: 'Heavy monsoon downpour' },
   'Patna Ganga Basin (Bihar)': { rainfall: 82.5, humidity: 78, temperature: 29.0, weather: 'Moderate rain' },
   'Varanasi Ganga Lowlands (UP)': { rainfall: 42.0, humidity: 72, temperature: 31.0, weather: 'Scattered showers' },
   'Delhi Yamuna Floodplains (Delhi-NCR)': { rainfall: 38.5, humidity: 68, temperature: 32.5, weather: 'Partly cloudy / Light drizzle' },
