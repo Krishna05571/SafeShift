@@ -59,7 +59,7 @@ A. FLOOD HAZARD CLASSIFICATION (Official IMD 24h Rainfall Scale):
 | R < 64.5 mm               | LOW            | monitoring      | 1              | Green Alert (Light/Moderate Rain)|
 
 * Alert Trigger: When R >= 115.6mm and baseline risk was not High:
-  "🚨 IMD Red Alert: Very Heavy rainfall (>=115.6mm) detected. Flood risk escalated to HIGH."
+  "[IMD RED ALERT] Very Heavy rainfall (>= 115.6mm) detected. Flood risk escalated to HIGH."
 
 B. LANDSLIDE HAZARD CLASSIFICATION (GSI Hill Slope Saturation Guidelines):
 --------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ B. LANDSLIDE HAZARD CLASSIFICATION (GSI Hill Slope Saturation Guidelines):
 | R < 35.5 mm               | LOW            | monitoring      | 1              | Normal Slope Equilibrium|
 
 * Alert Trigger: When R >= 64.5mm on mountain terrain:
-  "⛰️ GSI Warning: Critical slope saturation (>=64.5mm rain). Landslide risk surged to HIGH."
+  "[GSI WARNING] Critical slope saturation (>= 64.5mm rain). Landslide risk surged to HIGH."
 
 C. CYCLONE / GENERAL STORM SURGE:
 --------------------------------------------------------------------------------
@@ -244,27 +244,44 @@ Spillover Corridor Map Rendering:
 ================================================================================
 9. HIGHWAY NAVIGATION & ROUTING PHYSICS MODEL
 ================================================================================
-Calculates realistic road transit duration and driving distance:
+SafeShift implements a hybrid real-world highway routing architecture combining 
+OpenStreetMap/OSRM high-density waypoint geometry with mathematical transit models:
 
-1. Road Curvature & Winding Factor (W):
+1. Real-World Turn-by-Turn Highway Ingestion (OSRM Engine):
+   - Precomputed exact road geometry dataset across all 37 primary evacuation pairs.
+   - Spatial density: N_waypoints in [350, 550] GPS coordinate pairs per route.
+   - Route path follows actual national highways (NH-44, NH-58, NH-7, state expressways,
+     mountain passes, and river bridges).
+   - In-memory client cache retrieval latency: t_lookup < 1 ms.
+   - Dynamic OSRM API endpoint for custom routing:
+     URL: https://router.project-osrm.org/route/v1/driving/{lon1},{lat1};{lon2},{lat2}?overview=full&geometries=geojson
+
+2. Road Curvature & Winding Factor (W):
    - Dense Himalayan / Western Ghats terrain: W = 1.35
    - Dense Urban / Congested delta: W = 1.28
    - Plain Interstate Highway: W = 1.20
    RoadDistance_km = CrowFliesDistance_km * W
 
-2. Road Speed Profile (V):
+3. Road Speed Profile (V):
    - Mountainous winding route: V = 42 km/h
    - Monsoon flooded urban corridor: V = 35 km/h
    - National Highway corridor: V = 65 km/h
 
-3. Travel Duration:
+4. Travel Duration:
    TravelTime_min = round((RoadDistance_km / V) * 60) [minutes]
 
-4. Curved Highway Bezier Interpolation:
+5. Fallback Quadratic Bezier Highway Interpolation (for custom ad-hoc waypoints):
    Midpoint with perpendicular lateral displacement:
    dx = dest_lon - orig_lon
    dy = dest_lat - orig_lat
    Perpendicular vector: (-dy, dx) scaled by road curvature factor.
+
+6. Visual Cartographic Polyline Layering:
+   - Base Contrast Casing: Solid outer line (Weight: 9.0px, Opacity: 0.95, Color: #0f172a / #ffffff).
+   - Active Navigation Polyline: Solid royal blue (Weight: 5.5px, Opacity: 1.0, Color: #2563eb).
+   - Spillover Reroute Polyline: Dashed purple (Weight: 4.0px, DashArray: '8, 6', Color: #8b5cf6).
+   - Alternate 1 Corridor: Emerald green (Weight: 5.5px, Color: #10b981).
+   - Alternate 2 Corridor: Amber orange (Weight: 5.5px, Color: #f59e0b).
 
 ================================================================================
 10. GOOGLE GEMINI AI SITUATIONAL INTELLIGENCE & OPERATIONAL DIRECTIVE EVALUATION MODEL
