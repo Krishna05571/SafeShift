@@ -1252,15 +1252,19 @@
   position: absolute;
   top: 16px;
   left: 16px;
-  width: 320px;
+  width: 328px;
+  max-height: calc(100% - 32px);
+  display: flex;
+  flex-direction: column;
   border-radius: 12px;
   z-index: 1000;
   animation: slideIn 0.25s ease-out;
   border: 1px solid;
+  overflow: hidden;
 }
 
 .dark-theme .zone-details-panel {
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.96);
   backdrop-filter: blur(10px);
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
@@ -1268,10 +1272,10 @@
 }
 
 .light-theme .zone-details-panel {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(10px);
   border-color: #cbd5e1;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
   color: #0f172a;
 }
 
@@ -1287,6 +1291,7 @@
 }
 
 .panel-header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -1375,6 +1380,29 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  max-height: calc(100vh - 160px);
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+}
+
+.panel-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.panel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panel-body::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 4px;
+}
+
+.panel-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
 }
 
 .detail-stat-row {

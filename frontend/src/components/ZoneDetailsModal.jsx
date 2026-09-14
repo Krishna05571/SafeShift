@@ -14,18 +14,6 @@ export default function ZoneDetailsModal({
   if (!zone) return null;
 
   const isSafe = zone.safe === true || zone.location_type === 'relocation_site';
-  const activeRisk = (
-    riskMode === 'baseline'
-      ? (zone.baseline_risk || zone.risk || 'unknown')
-      : (zone.risk || zone.baseline_risk || 'unknown')
-  );
-  const risk = activeRisk.toLowerCase();
-
-  const priority = (
-    riskMode === 'baseline'
-      ? (zone.baseline_risk === 'high' ? 'immediate' : zone.baseline_risk === 'medium' ? 'short-term' : 'monitoring')
-      : (zone.priority || 'monitoring')
-  );
 
   // Initial immediate fallback weather (0ms latency guarantee)
   const initialFallback = getZoneFallbackWeather(zone) || {
@@ -79,6 +67,46 @@ export default function ZoneDetailsModal({
   const temp = liveWeather.temperature !== undefined ? Number(liveWeather.temperature) : initialFallback.temperature;
   const weather = liveWeather.weather || initialFallback.weather;
   const weatherSource = liveWeather.source || 'Open-Meteo Live API';
+
+  // Dynamic Risk & Priority Evaluation:
+  // In Live Weather Mode, evaluates strictly against official IMD & GSI benchmarks from real-time rainfall
+  const dynamicRisk = React.useMemo(() => {
+    if (isSafe) {
+      return { risk: 'safe', priority: 'optimal' };
+    }
+
+    if (riskMode === 'baseline') {
+      const bRisk = (zone.baseline_risk || zone.risk || 'medium').toLowerCase();
+      const bPriority =
+        bRisk === 'high' ? 'immediate' : bRisk === 'medium' ? 'short-term' : 'monitoring';
+      return { risk: bRisk, priority: bPriority };
+    }
+
+    // Live Weather Mode:
+    const rMm = Number(rainfall || 0);
+    const hazardType = (zone.hazard_type || 'landslide').toLowerCase();
+
+    if (hazardType === 'landslide') {
+      // GSI Hill Slope Saturation Guidelines:
+      // R >= 64.5mm -> HIGH (Immediate)
+      // 35.5mm <= R < 64.5mm -> MEDIUM (Short-Term)
+      // R < 35.5mm -> LOW (Monitoring)
+      if (rMm >= 64.5) return { risk: 'high', priority: 'immediate' };
+      if (rMm >= 35.5) return { risk: 'medium', priority: 'short-term' };
+      return { risk: 'low', priority: 'monitoring' };
+    } else {
+      // IMD Flood Rainfall Scale:
+      // R >= 115.6mm -> HIGH (Immediate)
+      // 64.5mm <= R < 115.6mm -> MEDIUM (Short-Term)
+      // R < 64.5mm -> LOW (Monitoring)
+      if (rMm >= 115.6) return { risk: 'high', priority: 'immediate' };
+      if (rMm >= 64.5) return { risk: 'medium', priority: 'short-term' };
+      return { risk: 'low', priority: 'monitoring' };
+    }
+  }, [isSafe, riskMode, zone, rainfall]);
+
+  const risk = dynamicRisk.risk;
+  const priority = dynamicRisk.priority;
 
   // Find destination safe shelters from the relocation plan with resilient normalized matching
   const matchedRoutes = relocationPlan.filter((r) => {
@@ -226,13 +254,15 @@ export default function ZoneDetailsModal({
             <div className="weather-impact-alert">
               <span className="impact-dot" />
               <span>
-                {rainfall > 100
-                  ? 'Extreme precipitation >100mm triggering High Flood triage'
-                  : rainfall > 80 && zone.hazard_type === 'landslide'
-                  ? 'Heavy precipitation >80mm on slopes triggering Landslide warning'
-                  : rainfall >= 40
-                  ? 'Moderate rainfall detected; active monitoring engaged'
-                  : 'Precipitation within baseline seasonal range'}
+                {rainfall >= 115.6
+                  ? 'Extreme precipitation (>=115.6mm) triggering IMD Red Alert & immediate evacuation'
+                  : rainfall >= 64.5 && zone.hazard_type === 'landslide'
+                  ? 'Critical pore pressure saturation (>=64.5mm rain) triggering GSI High Landslide warning'
+                  : rainfall >= 64.5
+                  ? 'Heavy rainfall (>=64.5mm) triggering IMD Orange Alert'
+                  : rainfall >= 35.5 && zone.hazard_type === 'landslide'
+                  ? 'Antecedent slope moisture (>=35.5mm) triggering Medium Alert'
+                  : 'Precipitation within baseline safe range; low risk / monitoring'}
               </span>
             </div>
           </div>
