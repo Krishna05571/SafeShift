@@ -13,6 +13,7 @@ import {
   CartesianGrid,
 } from 'recharts';
 import RelocationTable from './RelocationTable';
+import { getEffectiveZoneRisk, getEffectiveZonePriority } from '../utils/geoUtils';
 
 const PIE_COLORS = {
   high: '#ef4444',
@@ -85,16 +86,8 @@ export default function DashboardPanel({
         if (isSafe) {
           totalSafeCapacity += Number(p.capacity) || 0;
         } else {
-          const risk = (
-            riskMode === 'baseline'
-              ? (p.baseline_risk || p.risk || '')
-              : (p.risk || p.baseline_risk || '')
-          ).toLowerCase();
-          const priority = (
-            riskMode === 'baseline'
-              ? (p.baseline_risk === 'high' ? 'immediate' : p.baseline_risk === 'medium' ? 'short-term' : 'monitoring')
-              : (p.priority || '')
-          ).toLowerCase();
+          const risk = getEffectiveZoneRisk(p, riskMode).toLowerCase();
+          const priority = getEffectiveZonePriority(p, riskMode).toLowerCase();
           const population = Number(p.population) || 0;
 
           if (risk === 'high') {
@@ -129,9 +122,9 @@ export default function DashboardPanel({
     return relocationPlan.map((r) => {
       const zoneFeat = geoData?.features?.find((f) => f.properties?.area_name === r.from);
       const activeRisk = (
-        riskMode === 'baseline'
-          ? (zoneFeat?.properties?.baseline_risk || r.baseline_risk || r.risk || 'medium')
-          : (r.risk || zoneFeat?.properties?.risk || 'medium')
+        zoneFeat?.properties
+          ? getEffectiveZoneRisk(zoneFeat.properties, riskMode)
+          : (r.risk || 'medium')
       ).toUpperCase();
 
       return {
@@ -153,12 +146,9 @@ export default function DashboardPanel({
 
     geoData.features.forEach((f) => {
       const p = f.properties || {};
-      if (!p.safe) {
-        const risk = (
-          riskMode === 'baseline'
-            ? (p.baseline_risk || p.risk || 'low')
-            : (p.risk || p.baseline_risk || 'low')
-        ).toLowerCase();
+      const isSafe = p.safe === true || p.location_type === 'relocation_site';
+      if (!isSafe) {
+        const risk = getEffectiveZoneRisk(p, riskMode).toLowerCase();
         if (counts[risk] !== undefined) {
           counts[risk] += Number(p.population) || 0;
         }

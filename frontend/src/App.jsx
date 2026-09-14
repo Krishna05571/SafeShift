@@ -23,6 +23,7 @@ import {
   fetchWithTimeout,
   getHighwayRouteGeometry,
   fetchLiveOsrmHighway,
+  getEffectiveZoneRisk,
 } from './utils/geoUtils';
 import './App.css';
 
@@ -504,16 +505,12 @@ function App() {
 
     features.forEach((f) => {
       const props = f.properties || {};
-      if (props.safe) {
+      if (props.safe || props.location_type === 'relocation_site') {
         safe += 1;
         capacity += Number(props.capacity) || 0;
       } else {
         // Select risk according to active riskMode
-        const r = (
-          riskMode === 'baseline'
-            ? (props.baseline_risk || props.risk || '')
-            : (props.risk || props.baseline_risk || '')
-        ).toLowerCase();
+        const r = getEffectiveZoneRisk(props, riskMode);
 
         if (r === 'high') high += 1;
         else if (r === 'medium') medium += 1;

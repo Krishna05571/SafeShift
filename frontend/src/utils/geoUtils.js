@@ -200,6 +200,73 @@ export function generateCurvedHighwayGeometry(originCoords, destCoords, numPoint
 }
 
 /**
+ * Evaluates the effective risk level ('high' | 'medium' | 'low') for a zone based on the active risk mode.
+ * In 'baseline' mode: returns structural vulnerability (props.baseline_risk || props.risk).
+ * In 'live' mode: dynamically calculates risk based on live/fallback rainfall & hazard type under IMD/GSI guidelines.
+ */
+export function getEffectiveZoneRisk(props = {}, riskMode = 'baseline') {
+  if (!props) return 'low';
+  if (props.safe === true || props.location_type === 'relocation_site') {
+    return 'safe';
+  }
+
+  // Baseline Mode: Intrinsic structural geological / floodplain vulnerability
+  if (riskMode === 'baseline') {
+    return (props.baseline_risk || props.risk || 'medium').toLowerCase();
+  }
+
+  // Live Weather Mode:
+  let rMm = null;
+  if (props.rainfall !== undefined && props.rainfall !== null) {
+    rMm = Number(props.rainfall);
+  } else {
+    const fallback = getZoneFallbackWeather(props);
+    if (fallback && fallback.rainfall !== undefined) {
+      rMm = Number(fallback.rainfall);
+    }
+  }
+
+  if (rMm !== null && !isNaN(rMm)) {
+    const hazardType = (props.hazard_type || 'landslide').toLowerCase();
+
+    if (hazardType.includes('landslide')) {
+      // GSI Hill Slope Saturation Guidelines:
+      // R >= 64.5mm -> HIGH (Immediate)
+      // 35.5mm <= R < 64.5mm -> MEDIUM (Short-Term)
+      // R < 35.5mm -> LOW (Monitoring)
+      if (rMm >= 64.5) return 'high';
+      if (rMm >= 35.5) return 'medium';
+      return 'low';
+    } else {
+      // IMD Flood Inundation Guidelines:
+      // R >= 115.6mm -> HIGH (Immediate)
+      // 64.5mm <= R < 115.6mm -> MEDIUM (Short-Term)
+      // R < 64.5mm -> LOW (Monitoring)
+      if (rMm >= 115.6) return 'high';
+      if (rMm >= 64.5) return 'medium';
+      return 'low';
+    }
+  }
+
+  return (props.risk || props.baseline_risk || 'medium').toLowerCase();
+}
+
+/**
+ * Evaluates effective triage priority ('immediate' | 'short-term' | 'monitoring')
+ */
+export function getEffectiveZonePriority(props = {}, riskMode = 'baseline') {
+  if (!props) return 'monitoring';
+  if (props.safe === true || props.location_type === 'relocation_site') {
+    return 'optimal';
+  }
+
+  const effectiveRisk = getEffectiveZoneRisk(props, riskMode);
+  if (effectiveRisk === 'high') return 'immediate';
+  if (effectiveRisk === 'medium') return 'short-term';
+  return 'monitoring';
+}
+
+/**
  * Generates an instant local baseline relocation plan from GeoJSON dataset
  */
 export function generateClientRelocationPlan(geoData, riskMode = 'baseline') {
@@ -225,11 +292,11 @@ export function generateClientRelocationPlan(geoData, riskMode = 'baseline') {
         centroid_lon: centroid[1],
       });
     } else {
-      const rawRisk = (riskMode === 'live' ? (props.risk || props.baseline_risk) : (props.baseline_risk || props.risk)) || 'low';
-      const risk = String(rawRisk).toLowerCase();
+      const risk = getEffectiveZoneRisk(props, riskMode);
       const population = Number(props.population || 0);
       const riskScore = RISK_SCORES[risk] || 1;
       const priorityScore = riskScore * population;
+      const priority = getEffectiveZonePriority(props, riskMode);
 
       hazardZones.push({
         id: idx,
@@ -239,7 +306,7 @@ export function generateClientRelocationPlan(geoData, riskMode = 'baseline') {
         risk_score: riskScore,
         population,
         priority_score: priorityScore,
-        priority: props.priority || 'short-term',
+        priority: priority || props.priority || 'short-term',
         centroid_lat: centroid[0],
         centroid_lon: centroid[1],
       });

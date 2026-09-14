@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { getZoneFallbackWeather, fetchLiveOpenMeteoWeather } from '../utils/geoUtils';
+import {
+  getZoneFallbackWeather,
+  fetchLiveOpenMeteoWeather,
+  getEffectiveZoneRisk,
+  getEffectiveZonePriority,
+} from '../utils/geoUtils';
 
 export default function ZoneDetailsModal({
   zone,
@@ -82,50 +87,25 @@ export default function ZoneDetailsModal({
   const weatherSource = liveWeather.source || (hasLiveProps ? 'Open-Meteo Live API' : 'IMD Telemetry Forecast');
 
   // Dynamic Risk & Priority Evaluation:
-  // In Live Weather Mode, evaluates strictly against official IMD & GSI benchmarks from real-time rainfall
+  // Synchronized 1:1 with Map polygon colors and Dashboard stats
   const dynamicRisk = React.useMemo(() => {
     if (isSafe) {
       return { risk: 'safe', priority: 'optimal' };
     }
 
-    if (riskMode === 'baseline') {
-      const bRisk = (zone.baseline_risk || zone.risk || 'medium').toLowerCase();
-      const bPriority =
-        bRisk === 'high' ? 'immediate' : bRisk === 'medium' ? 'short-term' : 'monitoring';
-      return { risk: bRisk, priority: bPriority };
-    }
+    const effectiveProps = {
+      ...zone,
+      rainfall,
+      humidity,
+      temperature: temp,
+      weather,
+    };
 
-    // Live Weather Mode:
-    // If zone already has live risk & rainfall from /zones/live, maintain exact 1:1 synchronization with map
-    if (zone.risk && zone.rainfall !== undefined) {
-      const liveRisk = String(zone.risk).toLowerCase();
-      const livePriority =
-        zone.priority || (liveRisk === 'high' ? 'immediate' : liveRisk === 'medium' ? 'short-term' : 'monitoring');
-      return { risk: liveRisk, priority: livePriority };
-    }
+    const effRisk = getEffectiveZoneRisk(effectiveProps, riskMode);
+    const effPriority = getEffectiveZonePriority(effectiveProps, riskMode);
 
-    // Otherwise calculate dynamically from live rainfall according to official IMD & GSI scales
-    const rMm = Number(rainfall || 0);
-    const hazardType = (zone.hazard_type || 'landslide').toLowerCase();
-
-    if (hazardType === 'landslide') {
-      // GSI Hill Slope Saturation Guidelines:
-      // R >= 64.5mm -> HIGH (Immediate)
-      // 35.5mm <= R < 64.5mm -> MEDIUM (Short-Term)
-      // R < 35.5mm -> LOW (Monitoring)
-      if (rMm >= 64.5) return { risk: 'high', priority: 'immediate' };
-      if (rMm >= 35.5) return { risk: 'medium', priority: 'short-term' };
-      return { risk: 'low', priority: 'monitoring' };
-    } else {
-      // IMD Flood Rainfall Scale:
-      // R >= 115.6mm -> HIGH (Immediate)
-      // 64.5mm <= R < 115.6mm -> MEDIUM (Short-Term)
-      // R < 64.5mm -> LOW (Monitoring)
-      if (rMm >= 115.6) return { risk: 'high', priority: 'immediate' };
-      if (rMm >= 64.5) return { risk: 'medium', priority: 'short-term' };
-      return { risk: 'low', priority: 'monitoring' };
-    }
-  }, [isSafe, riskMode, zone, rainfall]);
+    return { risk: effRisk, priority: effPriority };
+  }, [isSafe, riskMode, zone, rainfall, humidity, temp, weather]);
 
   const risk = dynamicRisk.risk;
   const priority = dynamicRisk.priority;

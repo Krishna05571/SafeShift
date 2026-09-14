@@ -12,6 +12,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Navigation, X, ArrowRight, Layers, MapPin } from 'lucide-react';
 import { getZoneStyle, getHighlightStyle, createPopupContent } from '../utils/styles';
+import { getEffectiveZoneRisk } from '../utils/geoUtils';
 import Legend from './Legend';
 
 // Fix default Leaflet marker icon paths
@@ -217,9 +218,9 @@ export default function HazardMap({
       const props = f.properties || {};
       const isSafe = props.safe === true || props.location_type === 'relocation_site';
       const risk = (
-        riskMode === 'baseline'
-          ? (props.baseline_risk || props.risk || '')
-          : (props.risk || props.baseline_risk || '')
+        isSafe
+          ? 'safe'
+          : getEffectiveZoneRisk(props, riskMode)
       ).toLowerCase();
       const hazard = (props.hazard_type || '').toLowerCase();
 
@@ -285,9 +286,9 @@ export default function HazardMap({
 
     // Tooltip for instant hover feedback with meteorological metrics
     const currentRisk = (
-      riskMode === 'baseline'
-        ? (props.baseline_risk || props.risk || '')
-        : (props.risk || props.baseline_risk || '')
+      props.safe
+        ? 'SAFE'
+        : getEffectiveZoneRisk(props, riskMode)
     ).toUpperCase();
 
     const tooltipText = props.safe

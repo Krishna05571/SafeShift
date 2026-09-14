@@ -1,3 +1,5 @@
+import { getEffectiveZoneRisk, getEffectiveZonePriority } from './geoUtils';
+
 // Risk and Safe Zone color definitions
 export const RISK_COLORS = {
   catastrophic: {
@@ -48,11 +50,7 @@ export const getZoneStyle = (feature, riskMode = 'baseline') => {
   }
 
   // Determine active risk based on selected mode ('baseline' or 'live')
-  const risk = (
-    riskMode === 'baseline'
-      ? props.baseline_risk || props.risk || ''
-      : props.risk || props.baseline_risk || ''
-  ).toLowerCase();
+  const risk = getEffectiveZoneRisk(props, riskMode).toLowerCase();
 
   switch (risk) {
     case 'catastrophic':
@@ -127,18 +125,13 @@ export const createPopupContent = (properties = {}, riskMode = 'baseline') => {
   const capacity = properties.capacity !== undefined ? properties.capacity.toLocaleString() : null;
 
   // Active risk & priority based on riskMode
-  const activeRisk = (
-    riskMode === 'baseline'
-      ? properties.baseline_risk || properties.risk
-      : properties.risk || properties.baseline_risk
-  ) || (isSafe ? 'safe' : 'unknown');
-
+  const activeRisk = isSafe ? 'safe' : getEffectiveZoneRisk(properties, riskMode);
   const risk = activeRisk.toUpperCase();
 
   const priority = (
-    riskMode === 'baseline'
-      ? (properties.baseline_risk === 'high' ? 'immediate' : properties.baseline_risk === 'medium' ? 'short-term' : 'monitoring')
-      : (properties.priority || (isSafe ? 'safe' : 'unassigned'))
+    isSafe
+      ? 'safe'
+      : getEffectiveZonePriority(properties, riskMode)
   ).toUpperCase();
 
   const rainfall = properties.rainfall !== undefined ? Number(properties.rainfall) : null;
