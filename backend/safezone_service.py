@@ -60,9 +60,32 @@ class SafeZoneCapacityManager:
                 area_name = props.get("area_name", f"Safe Zone {idx+1}")
                 total_cap = int(props.get("capacity", 5000))
                 
-                # Derive realistic initial occupancy (~50% to 75% to showcase dynamic filling & alerts)
-                initial_pct = 0.55 + ((idx % 4) * 0.11)  # 55%, 66%, 77%, 88%
-                initial_occ = int(total_cap * initial_pct)
+                DEFAULT_OCCUPANCIES = {
+                    "Safe Zone South-1 (Kozhikode Regional Elevated Sports Complex)": 92.4, # CRITICAL (Red)
+                    "Safe Zone East-3 (Patna AIIMS & Bihta Highland Center)": 94.8,         # CRITICAL (Red)
+                    "Safe Zone North-1 (Dehradun FRI & Cantt Grounds)": 78.5,             # WARNING (Yellow)
+                    "Safe Zone West-2 (Pune Pimpri Elevated Shelter Grounds)": 82.6,       # WARNING (Yellow)
+                    "Safe Zone East-1 (Guwahati Khanapara Elevated Stadium)": 86.0,        # WARNING (Yellow)
+                    "Safe Zone South-2 (Kochi Infopark Elevated Convention Grounds)": 74.2, # WARNING (Yellow)
+                    "Safe Zone North-3 (Srinagar Elevated Airport Plateau)": 79.0,         # WARNING (Yellow)
+                    "Safe Zone East-5 (Kolkata Salt Lake Stadium High-Ground)": 54.5,       # NORMAL (Green)
+                    "Safe Zone Central-1 (Nagpur Divisional Sports Complex)": 58.0,        # NORMAL (Green)
+                    "Safe Zone North-4 (Greater Noida High-Ground Center)": 48.2,         # NORMAL (Green)
+                    "Safe Zone North-2 (Chandigarh Sports Complex)": 42.5,                 # NORMAL (Green)
+                    "Safe Zone Central-2 (Bhopal BHEL Highland Grounds)": 51.0,           # NORMAL (Green)
+                    "Safe Zone East-2 (Bhubaneswar Kalinga Stadium)": 62.4,                # NORMAL (Green)
+                    "Safe Zone East-4 (Siliguri North Bengal University Grounds)": 46.8,   # NORMAL (Green)
+                    "Safe Zone West-1 (Ahmedabad Sardar Patel Sports Enclave)": 39.5,      # NORMAL (Green)
+                    "Safe Zone West-3 (Jaipur SMS Stadium High-Ground)": 53.0,             # NORMAL (Green)
+                    "Safe Zone West-4 (Surat Althan Elevated Community Complex)": 61.2,    # NORMAL (Green)
+                    "Safe Zone South-3 (Hyderabad Gachibowli Stadium Complex)": 44.0,      # NORMAL (Green)
+                    "Safe Zone South-4 (Bengaluru Kanteerava Highland Complex)": 56.5,     # NORMAL (Green)
+                    "Safe Zone South-5 (Chennai Elevated Jawaharlal Nehru Stadium Grounds)": 64.0, # NORMAL (Green)
+                }
+
+                # Realistic initial occupancy (demo-ready with critical, warning, and optimal havens)
+                fill_pct_val = DEFAULT_OCCUPANCIES.get(area_name, 55.0 + ((idx % 4) * 11.0))
+                initial_occ = int(total_cap * (fill_pct_val / 100.0))
                 
                 geom_json = f.get("geometry")
                 c_lat, c_lon = 20.5937, 78.9629
@@ -81,7 +104,7 @@ class SafeZoneCapacityManager:
                     "total_capacity": total_cap,
                     "current_occupancy": initial_occ,
                     "remaining_capacity": max(0, total_cap - initial_occ),
-                    "fill_percentage": round((initial_occ / total_cap) * 100.0, 1),
+                    "fill_percentage": round(fill_pct_val, 1),
                     "centroid_lat": c_lat,
                     "centroid_lon": c_lon,
                     "inflow_rate_per_min": 120 + ((idx * 45) % 150), # 120 - 270 evacuees/min

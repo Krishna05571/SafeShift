@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   RotateCcw,
 } from 'lucide-react';
+import { DEFAULT_SHELTER_OCCUPANCIES } from '../utils/geoUtils';
 
 /**
  * Dedicated Operations Dashboard for Live Safe Zone Capacity Tracking,
@@ -84,7 +85,7 @@ export default function SafeZoneCapacityPage({
         .map((f, idx) => {
           const p = f.properties || {};
           const cap = p.capacity || 20000;
-          const initialPct = 55 + ((idx % 4) * 11);
+          const initialPct = p.fill_percentage ?? (DEFAULT_SHELTER_OCCUPANCIES[p.area_name] ?? (55 + ((idx % 4) * 11)));
           const occ = Math.round((cap * initialPct) / 100);
           const rem = Math.max(0, cap - occ);
           const inflow = 150 + ((idx * 30) % 120);

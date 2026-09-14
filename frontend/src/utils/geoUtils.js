@@ -326,7 +326,7 @@ export function buildClientMultiRoutes(originName, originCoords, destName, destC
         if (c) {
           const cap = Number(p.capacity || 10000);
           const liveStatus = safeZoneStatus?.safe_zones?.find((sz) => sz.name === p.area_name);
-          const fillPct = liveStatus?.fill_percentage ?? (p.fill_percentage ?? 45);
+          const fillPct = liveStatus?.fill_percentage ?? (p.fill_percentage ?? (DEFAULT_SHELTER_OCCUPANCIES[p.area_name] || 50));
           const remCap = liveStatus?.remaining_capacity ?? (p.remaining_capacity ?? Math.round(cap * (1 - fillPct / 100)));
 
           safeZonesList.push({
@@ -345,13 +345,14 @@ export function buildClientMultiRoutes(originName, originCoords, destName, destC
   // Find target safe zone or fallback
   let primaryHaven = safeZonesList.find((sz) => sz.name === destName);
   if (!primaryHaven && destCoords) {
+    const defaultFill = DEFAULT_SHELTER_OCCUPANCIES[destName] || 50;
     primaryHaven = {
       name: destName || 'Designated Safe Haven',
       centroid_lat: destCoords[0],
       centroid_lon: destCoords[1],
       total_capacity: 10000,
-      remaining_capacity: 5500,
-      fill_percentage: 45,
+      remaining_capacity: Math.round(10000 * (1 - defaultFill / 100)),
+      fill_percentage: defaultFill,
     };
   }
 
@@ -422,31 +423,88 @@ export function buildClientMultiRoutes(originName, originCoords, destName, destC
   };
 }
 
+export const DEFAULT_SHELTER_OCCUPANCIES = {
+  'Safe Zone South-1 (Kozhikode Regional Elevated Sports Complex)': 92.4, // CRITICAL (Red, >=90%)
+  'Safe Zone East-3 (Patna AIIMS & Bihta Highland Center)': 94.8,         // CRITICAL (Red, >=90%)
+  'Safe Zone North-1 (Dehradun FRI & Cantt Grounds)': 78.5,             // WARNING (Yellow, 70-89%)
+  'Safe Zone West-2 (Pune Pimpri Elevated Shelter Grounds)': 82.6,       // WARNING (Yellow, 70-89%)
+  'Safe Zone East-1 (Guwahati Khanapara Elevated Stadium)': 86.0,        // WARNING (Yellow, 70-89%)
+  'Safe Zone South-2 (Kochi Infopark Elevated Convention Grounds)': 74.2, // WARNING (Yellow, 70-89%)
+  'Safe Zone North-3 (Srinagar Elevated Airport Plateau)': 79.0,         // WARNING (Yellow, 70-89%)
+  'Safe Zone East-5 (Kolkata Salt Lake Stadium High-Ground)': 54.5,       // NORMAL (Green, <70%)
+  'Safe Zone Central-1 (Nagpur Divisional Sports Complex)': 58.0,        // NORMAL (Green, <70%)
+  'Safe Zone North-4 (Greater Noida High-Ground Center)': 48.2,         // NORMAL (Green, <70%)
+  'Safe Zone North-2 (Chandigarh Sports Complex)': 42.5,                 // NORMAL (Green, <70%)
+  'Safe Zone Central-2 (Bhopal BHEL Highland Grounds)': 51.0,           // NORMAL (Green, <70%)
+  'Safe Zone East-2 (Bhubaneswar Kalinga Stadium)': 62.4,                // NORMAL (Green, <70%)
+  'Safe Zone East-4 (Siliguri North Bengal University Grounds)': 46.8,   // NORMAL (Green, <70%)
+  'Safe Zone West-1 (Ahmedabad Sardar Patel Sports Enclave)': 39.5,      // NORMAL (Green, <70%)
+  'Safe Zone West-3 (Jaipur SMS Stadium High-Ground)': 53.0,             // NORMAL (Green, <70%)
+  'Safe Zone West-4 (Surat Althan Elevated Community Complex)': 61.2,    // NORMAL (Green, <70%)
+  'Safe Zone South-3 (Hyderabad Gachibowli Stadium Complex)': 44.0,      // NORMAL (Green, <70%)
+  'Safe Zone South-4 (Bengaluru Kanteerava Highland Complex)': 56.5,     // NORMAL (Green, <70%)
+  'Safe Zone South-5 (Chennai Elevated Jawaharlal Nehru Stadium Grounds)': 64.0, // NORMAL (Green, <70%)
+};
+
 /**
- * Generates an initial Safe Zone capacity status object from GeoJSON
+ * Generates an initial Safe Zone capacity status object from GeoJSON with realistic demo spread (green, yellow, critical)
  */
 export function getInitialSafeZoneStatus(geoData) {
   if (!geoData?.features) return { safe_zones: [], capacity_alerts: [] };
   const safe_zones = [];
-  geoData.features.forEach((f) => {
+  const capacity_alerts = [];
+
+  geoData.features.forEach((f, idx) => {
     const p = f.properties || {};
     if (p.safe === true || p.location_type === 'relocation_site') {
       const cap = Number(p.capacity || 10000);
       const c = extractCentroid(f) || [28.7, 77.1];
-      const fill = p.fill_percentage ?? 45;
+      const fill = p.fill_percentage ?? (DEFAULT_SHELTER_OCCUPANCIES[p.area_name] ?? (50 + ((idx % 4) * 11)));
+      const occ = Math.round((cap * fill) / 100);
+      const rem = Math.max(0, cap - occ);
+      const inflow = 120 + ((idx * 45) % 150);
+      const mins = inflow > 0 && rem > 0 ? Math.round((rem / inflow) * 10) / 10 : 0;
+
+      const alertLevel = fill >= 100 ? 'FULL' : fill >= 90 ? 'CRITICAL' : fill >= 70 ? 'WARNING' : 'NORMAL';
+      const alertMsg =
+        fill >= 100
+          ? `Safe Zone FULL (${fill}%) – redirecting evacuees`
+          : fill >= 90
+          ? `Safe Zone Critical (${fill}%) – only ${rem.toLocaleString()} beds remaining`
+          : fill >= 70
+          ? `Safe Zone Warning (${fill}%) – load nearing capacity`
+          : `Safe Zone optimal (${fill}%)`;
+      const statusColor = fill >= 100 ? '#ef4444' : fill >= 90 ? '#ff6b6b' : fill >= 70 ? '#f59e0b' : '#10b981';
+
+      if (fill >= 90) {
+        capacity_alerts.push({
+          shelter_name: p.area_name,
+          fill_percentage: fill,
+          alert_level: alertLevel,
+          message: alertMsg,
+        });
+      }
+
       safe_zones.push({
+        id: `sz-${idx}`,
         name: p.area_name,
         total_capacity: cap,
-        remaining_capacity: Math.round(cap * (1 - fill / 100)),
-        current_occupancy: Math.round(cap * (fill / 100)),
+        remaining_capacity: rem,
+        current_occupancy: occ,
         fill_percentage: fill,
         centroid_lat: c[0],
         centroid_lon: c[1],
         location_type: p.location_type || 'relocation_site',
+        inflow_rate_per_min: inflow,
+        estimated_minutes_to_full: mins,
+        alert_level: alertLevel,
+        alert_message: alertMsg,
+        status_color: statusColor,
       });
     }
   });
-  return { safe_zones, capacity_alerts: [] };
+
+  return { safe_zones, capacity_alerts };
 }
 
 /**
