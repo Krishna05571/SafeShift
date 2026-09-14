@@ -1,3 +1,5 @@
+import initialHighwayRoutes from '../data/initial_highway_routes.json';
+
 /**
  * SafeShift Geographic and Route Calculation Utilities
  * High-performance client-side centroid extraction, Bezier highway path generation,
@@ -10,6 +12,69 @@ const RISK_SCORES = {
   medium: 2,
   low: 1,
 };
+
+export { initialHighwayRoutes };
+
+/**
+ * Retrieves precomputed real-world national highway coordinates from disk or generates realistic curve
+ */
+export function getHighwayRouteGeometry(originCoords, destCoords) {
+  if (!originCoords || !destCoords) return null;
+  const [oLat, oLon] = originCoords;
+  const [dLat, dLon] = destCoords;
+  const key = `${Number(oLat).toFixed(4)}_${Number(oLon).toFixed(4)}_${Number(dLat).toFixed(4)}_${Number(dLon).toFixed(4)}`;
+
+  if (initialHighwayRoutes && initialHighwayRoutes[key]) {
+    return initialHighwayRoutes[key];
+  }
+
+  // Also check reverse key
+  const reverseKey = `${Number(dLat).toFixed(4)}_${Number(dLon).toFixed(4)}_${Number(oLat).toFixed(4)}_${Number(oLon).toFixed(4)}`;
+  if (initialHighwayRoutes && initialHighwayRoutes[reverseKey]) {
+    const rev = initialHighwayRoutes[reverseKey];
+    return {
+      ...rev,
+      coordinates: [...rev.coordinates].reverse(),
+    };
+  }
+
+  // Fallback to curved geometry
+  const directCurve = generateCurvedHighwayGeometry(originCoords, destCoords, 30);
+  const crowDist = haversineDistanceKm(oLat, oLon, dLat, dLon);
+  const estDistance = Math.round(crowDist * 1.3);
+  const estDuration = Math.round((estDistance / 50) * 60);
+  return {
+    coordinates: directCurve,
+    distance_km: estDistance,
+    travel_time_min: estDuration,
+    source: 'Direct Transit Corridor',
+  };
+}
+
+/**
+ * Fetches real-time highway turn-by-turn geometry directly from OSRM OpenStreetMap engine
+ */
+export async function fetchLiveOsrmHighway(originCoords, destCoords) {
+  const [oLat, oLon] = originCoords;
+  const [dLat, dLon] = destCoords;
+  const url = `https://router.project-osrm.org/route/v1/driving/${oLon},${oLat};${dLon},${dLat}?overview=full&geometries=geojson`;
+  const res = await fetchWithTimeout(url, {}, 3500);
+  if (!res.ok) throw new Error(`OSRM status ${res.status}`);
+  const data = await res.json();
+  if (data.code === 'Ok' && data.routes && data.routes[0]) {
+    const r = data.routes[0];
+    const raw = r.geometry.coordinates;
+    const latLon = raw.map(([lon, lat]) => [Number(lat.toFixed(5)), Number(lon.toFixed(5))]);
+    return {
+      coordinates: latLon,
+      distance_km: Math.round((r.distance / 1000) * 10) / 10,
+      travel_time_min: Math.round(r.duration / 60),
+      source: 'OpenStreetMap National Highway Engine',
+      waypoints_count: latLon.length,
+    };
+  }
+  throw new Error('OSRM did not return valid routes');
+}
 
 /**
  * Extracts [lat, lon] centroid from a GeoJSON feature, raw properties object, or coordinate pair
@@ -297,19 +362,20 @@ export function buildClientMultiRoutes(originName, originCoords, destName, destC
   const primaryRoadDist = Math.round(primaryDist * 1.3);
   const primaryTime = Math.round((primaryRoadDist / 50) * 60);
 
+  const primaryHw = getHighwayRouteGeometry(oCoords, pCoords);
   const primaryRoute = {
     id: 'primary',
     type: 'primary',
     name: primaryHaven?.name || destName || 'Primary Haven',
-    distance_km: primaryRoadDist,
-    travel_time_min: primaryTime,
+    distance_km: primaryHw?.distance_km || primaryRoadDist,
+    travel_time_min: primaryHw?.travel_time_min || primaryTime,
     dest_coords: pCoords,
-    coordinates: generateCurvedHighwayGeometry(oCoords, pCoords, 28),
+    coordinates: primaryHw?.coordinates || generateCurvedHighwayGeometry(oCoords, pCoords, 28),
     total_capacity: primaryHaven?.total_capacity || 10000,
     remaining_capacity: primaryHaven?.remaining_capacity || 5500,
     fill_percentage: primaryHaven?.fill_percentage || 45,
     color: '#2563eb',
-    source: 'SafeShift Transit Engine',
+    source: primaryHw?.source || 'OpenStreetMap National Highway Engine',
   };
 
   // Find alternative safe havens
@@ -329,19 +395,20 @@ export function buildClientMultiRoutes(originName, originCoords, destName, destC
 
   const alternates = altCandidates.slice(0, 2).map((alt, idx) => {
     const aCoords = [alt.centroid_lat, alt.centroid_lon];
+    const altHw = getHighwayRouteGeometry(oCoords, aCoords);
     return {
       id: `alt_${idx + 1}`,
       type: 'alternate',
       name: alt.name,
-      distance_km: alt.distance_km,
-      travel_time_min: alt.travel_time_min,
+      distance_km: altHw?.distance_km || alt.distance_km,
+      travel_time_min: altHw?.travel_time_min || alt.travel_time_min,
       dest_coords: aCoords,
-      coordinates: generateCurvedHighwayGeometry(oCoords, aCoords, 28),
+      coordinates: altHw?.coordinates || generateCurvedHighwayGeometry(oCoords, aCoords, 28),
       total_capacity: alt.total_capacity,
       remaining_capacity: alt.remaining_capacity,
       fill_percentage: alt.fill_percentage,
       color: idx === 0 ? '#10b981' : '#f59e0b',
-      source: 'SafeShift Transit Engine',
+      source: altHw?.source || 'OpenStreetMap National Highway Engine',
     };
   });
 

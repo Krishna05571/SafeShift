@@ -442,23 +442,22 @@ export default function HazardMap({
                 key={`casing-${activeDetailedRoute.from}-${activeDetailedRoute.to}-${activeDetailedRoute.coordinates.length}-${theme}`}
                 positions={activeDetailedRoute.coordinates}
                 pathOptions={{
-                  color: theme === 'light' ? '#ffffff' : '#000000',
-                  weight: 8,
-                  opacity: 0.9,
+                  color: theme === 'light' ? '#ffffff' : '#0f172a',
+                  weight: 9,
+                  opacity: 0.95,
                   lineCap: 'round',
                   lineJoin: 'round',
                 }}
               />
 
-              {/* High-Precision Highway Polyline: Black in Light Mode, White in Dark/Night Mode */}
+              {/* High-Precision Highway Polyline: Solid Vibrant Navigation Blue */}
               <Polyline
                 key={`highway-${activeDetailedRoute.from}-${activeDetailedRoute.to}-${activeDetailedRoute.coordinates.length}-${theme}`}
                 positions={activeDetailedRoute.coordinates}
                 pathOptions={{
-                  color: theme === 'light' ? '#000000' : '#ffffff',
-                  weight: 4.5,
+                  color: '#2563eb',
+                  weight: 5.5,
                   opacity: 1.0,
-                  dashArray: '8, 6',
                   lineCap: 'round',
                   lineJoin: 'round',
                 }}
