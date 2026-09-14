@@ -478,10 +478,21 @@ export function getInitialSafeZoneStatus(geoData) {
 
       if (fill >= 90) {
         capacity_alerts.push({
+          id: `cap-alert-${p.area_name}-${idx}`,
+          zone_name: p.area_name,
           shelter_name: p.area_name,
+          name: p.area_name,
+          area_name: p.area_name,
           fill_percentage: fill,
           alert_level: alertLevel,
           message: alertMsg,
+          remaining_capacity: rem,
+          total_capacity: cap,
+          current_occupancy: occ,
+          centroid_lat: c[0],
+          centroid_lon: c[1],
+          estimated_minutes_to_full: mins,
+          status_color: statusColor,
         });
       }
 
@@ -524,5 +535,112 @@ export async function fetchWithTimeout(url, options = {}, timeoutMs = 2500) {
     clearTimeout(id);
     throw err;
   }
+}
+
+export const DEFAULT_ZONE_WEATHER = {
+  'Chamoli - Joshimath Zone (UK)': { rainfall: 124.5, humidity: 88, temperature: 18.2, weather: 'Heavy rain / Cloudburst alert' },
+  'Kedarnath - Rudraprayag Valley (UK)': { rainfall: 118.0, humidity: 86, temperature: 16.5, weather: 'Continuous heavy rain' },
+  'Nainital Kumaon Hills (UK)': { rainfall: 54.0, humidity: 79, temperature: 21.0, weather: 'Moderate rain' },
+  'Shimla - Rampur Corridor (HP)': { rainfall: 92.5, humidity: 84, temperature: 17.8, weather: 'Heavy monsoon showers' },
+  'Kullu - Manali Beas Basin (HP)': { rainfall: 104.0, humidity: 87, temperature: 15.6, weather: 'Heavy rain / Torrential' },
+  'Mandi - Pandoh Catchment (HP)': { rainfall: 68.2, humidity: 81, temperature: 22.4, weather: 'Moderate rain showers' },
+  'Dharamsala - Kangra Slopes (HP)': { rainfall: 128.0, humidity: 91, temperature: 19.5, weather: 'Cloudburst warning' },
+  'Wayanad - Meppadi Ghats (Kerala)': { rainfall: 135.0, humidity: 94, temperature: 23.1, weather: 'Extreme torrential monsoon' },
+  'Idukki - Munnar High Ranges (Kerala)': { rainfall: 112.5, humidity: 92, temperature: 19.8, weather: 'Very heavy rain' },
+  'Mahad - Savitri River Basin (Maharashtra)': { rainfall: 126.4, humidity: 89, temperature: 25.4, weather: 'Heavy rain / River cresting' },
+  'Chiplun - Vashishti Basin (Maharashtra)': { rainfall: 119.0, humidity: 88, temperature: 26.0, weather: 'Heavy monsoon downpour' },
+  'Raigad - Western Slopes (Maharashtra)': { rainfall: 98.5, humidity: 85, temperature: 26.8, weather: 'Heavy rain' },
+  'Pune Western Ghats Slopes (Maharashtra)': { rainfall: 62.0, humidity: 76, temperature: 24.5, weather: 'Moderate rain' },
+  'Nilgiris - Ooty Slopes (Tamil Nadu)': { rainfall: 72.5, humidity: 83, temperature: 16.2, weather: 'Active rain showers' },
+  'Darjeeling - Kurseong Hills (WB)': { rainfall: 114.0, humidity: 90, temperature: 17.0, weather: 'Heavy rain / Mountain fog' },
+  'Kalimpong - Teesta Gorge (WB)': { rainfall: 96.5, humidity: 88, temperature: 19.2, weather: 'Heavy rain' },
+  'Cherrapunji - Khasi Hills (Meghalaya)': { rainfall: 148.0, humidity: 96, temperature: 20.5, weather: 'Extreme continuous downpour' },
+  'Assam Brahmaputra Basin - Majuli': { rainfall: 132.0, humidity: 93, temperature: 27.5, weather: 'Severe riverine inundation' },
+  'Patna Ganga Basin (Bihar)': { rainfall: 82.5, humidity: 78, temperature: 29.0, weather: 'Moderate rain' },
+  'Varanasi Ganga Lowlands (UP)': { rainfall: 42.0, humidity: 72, temperature: 31.0, weather: 'Scattered showers' },
+  'Delhi Yamuna Floodplains (Delhi-NCR)': { rainfall: 38.5, humidity: 68, temperature: 32.5, weather: 'Partly cloudy / Light drizzle' },
+  'Cuttack - Mahanadi Delta (Odisha)': { rainfall: 88.0, humidity: 84, temperature: 28.5, weather: 'Moderate rain showers' },
+  'Leh Indus Valley Belt (Ladakh)': { rainfall: 48.0, humidity: 55, temperature: 14.0, weather: 'Overcast / High altitude drizzle' },
+};
+
+/**
+ * Returns fallback meteorological parameters for any zone
+ */
+export function getZoneFallbackWeather(zone) {
+  if (!zone) return null;
+  const name = zone.area_name || zone.name || '';
+  if (DEFAULT_ZONE_WEATHER[name]) {
+    return DEFAULT_ZONE_WEATHER[name];
+  }
+
+  // Fuzzy match
+  const found = Object.keys(DEFAULT_ZONE_WEATHER).find((k) =>
+    k.toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes(k.toLowerCase())
+  );
+  if (found) {
+    return DEFAULT_ZONE_WEATHER[found];
+  }
+
+  // Default synthetic based on risk
+  const risk = (zone.risk || zone.baseline_risk || 'medium').toLowerCase();
+  const isHigh = risk === 'high';
+  const isMed = risk === 'medium';
+  return {
+    rainfall: isHigh ? 116.5 : isMed ? 68.0 : 32.0,
+    humidity: isHigh ? 88 : isMed ? 78 : 65,
+    temperature: 26.5,
+    weather: isHigh ? 'Heavy rain' : isMed ? 'Moderate rain' : 'Partly cloudy',
+  };
+}
+
+export function getWmoWeatherDescription(code) {
+  const map = {
+    0: 'Clear sky',
+    1: 'Mainly clear',
+    2: 'Partly cloudy',
+    3: 'Overcast',
+    45: 'Foggy',
+    48: 'Depositing rime fog',
+    51: 'Light drizzle',
+    53: 'Moderate drizzle',
+    55: 'Dense drizzle',
+    61: 'Slight rain',
+    63: 'Moderate rain',
+    65: 'Heavy rain',
+    71: 'Slight snow',
+    73: 'Moderate snow',
+    75: 'Heavy snow',
+    80: 'Slight rain showers',
+    81: 'Moderate rain showers',
+    82: 'Violent rain showers',
+    95: 'Thunderstorm',
+    96: 'Thunderstorm with hail',
+    99: 'Severe thunderstorm',
+  };
+  return map[code] || 'Cloudy with precipitation';
+}
+
+/**
+ * Direct client-side Open-Meteo live weather fetcher
+ */
+export async function fetchLiveOpenMeteoWeather(lat, lon) {
+  if (!lat || !lon) return null;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code&daily=precipitation_sum&timezone=auto&forecast_days=1`;
+  const res = await fetchWithTimeout(url, {}, 3000);
+  if (!res.ok) throw new Error(`Open-Meteo HTTP ${res.status}`);
+  const data = await res.json();
+  const cur = data.current || {};
+  const daily = data.daily || {};
+  const rain24h = daily.precipitation_sum?.[0] !== undefined ? Number(daily.precipitation_sum[0]) : (Number(cur.precipitation || 0) * 12);
+  const wCode = cur.weather_code ?? 61;
+  const weatherDesc = getWmoWeatherDescription(wCode);
+  return {
+    rainfall: Math.round(rain24h * 10) / 10,
+    rainfall_1h: Math.round(Number(cur.precipitation || 0) * 10) / 10,
+    humidity: Math.round(Number(cur.relative_humidity_2m || 75)),
+    temperature: Math.round(Number(cur.temperature_2m || 24) * 10) / 10,
+    weather: weatherDesc,
+    source: 'Open-Meteo Real-Time Telemetry',
+  };
 }
 

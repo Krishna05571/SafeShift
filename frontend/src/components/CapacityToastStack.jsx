@@ -12,7 +12,10 @@ export default function CapacityToastStack({
   const [dismissedIds, setDismissedIds] = useState(new Set());
   const [collapsed, setCollapsed] = useState(false);
 
-  const visibleAlerts = alerts.filter((a) => !dismissedIds.has(a.id || a.zone_name));
+  const visibleAlerts = alerts.filter((a) => {
+    const alertId = a.id || a.zone_name || a.shelter_name || a.name || a.area_name;
+    return !dismissedIds.has(alertId);
+  });
 
   if (visibleAlerts.length === 0) return null;
 
@@ -42,20 +45,22 @@ export default function CapacityToastStack({
 
       {!collapsed && (
         <div className="toast-cards-list">
-          {visibleAlerts.slice(0, 4).map((alert) => {
-            const isFull = alert.alert_level === 'FULL';
-            const isCritical = alert.alert_level === 'CRITICAL';
+          {visibleAlerts.slice(0, 4).map((alert, idx) => {
+            const isFull = alert.alert_level === 'FULL' || (alert.fill_percentage >= 100);
+            const isCritical = alert.alert_level === 'CRITICAL' || (alert.fill_percentage >= 90);
             const badgeColor = isFull ? '#ef4444' : isCritical ? '#ff6b6b' : '#f59e0b';
+            const safeZoneName = alert.zone_name || alert.shelter_name || alert.name || alert.area_name || `Safe Shelter #${idx + 1}`;
+            const alertKey = alert.id || safeZoneName;
 
             return (
               <div
-                key={alert.id || alert.zone_name}
+                key={alertKey}
                 className={`capacity-toast-card ${isFull ? 'toast-full' : isCritical ? 'toast-critical' : 'toast-warning'}`}
                 style={{ borderLeftColor: badgeColor }}
               >
                 <div className="toast-card-top">
                   <div className="toast-zone-group">
-                    <strong className="toast-zone-name">{alert.zone_name}</strong>
+                    <strong className="toast-zone-name">{safeZoneName}</strong>
                   </div>
 
                   <span
@@ -72,20 +77,20 @@ export default function CapacityToastStack({
                   <button
                     type="button"
                     className="toast-dismiss-btn"
-                    onClick={(e) => handleDismiss(alert.id || alert.zone_name, e)}
+                    onClick={(e) => handleDismiss(alertKey, e)}
                     title="Dismiss alert"
                   >
                     ×
                   </button>
                 </div>
 
-                <p className="toast-message">{alert.message}</p>
+                <p className="toast-message">{alert.message || `Capacity load at ${alert.fill_percentage}% - rerouting active.`}</p>
 
                 <div className="toast-meta-row">
                   <span className="toast-remaining">
                     Remaining: <strong>{alert.remaining_capacity?.toLocaleString()}</strong> slots
                   </span>
-                  {alert.estimated_minutes_to_full !== null && alert.estimated_minutes_to_full > 0 && (
+                  {alert.estimated_minutes_to_full !== null && alert.estimated_minutes_to_full !== undefined && alert.estimated_minutes_to_full > 0 && (
                     <span className="toast-eta">
                       Full in ~{alert.estimated_minutes_to_full} mins
                     </span>
@@ -110,7 +115,7 @@ export default function CapacityToastStack({
                     onClick={() => {
                       if (onViewAlternateRoutes) {
                         onViewAlternateRoutes({
-                          name: alert.zone_name,
+                          name: safeZoneName,
                           lat: alert.centroid_lat,
                           lon: alert.centroid_lon,
                           remaining_capacity: alert.remaining_capacity,
@@ -128,7 +133,7 @@ export default function CapacityToastStack({
                     onClick={() => {
                       if (onLocateZone) {
                         onLocateZone({
-                          area_name: alert.zone_name,
+                          area_name: safeZoneName,
                           centroid_lat: alert.centroid_lat,
                           centroid_lon: alert.centroid_lon,
                           safe: true,
