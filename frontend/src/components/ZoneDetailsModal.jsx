@@ -15,6 +15,7 @@ export default function ZoneDetailsModal({
   onClearRoute,
   loadingRoute = false,
   riskMode = 'baseline',
+  onUpdateZoneWeather,
 }) {
   if (!zone) return null;
 
@@ -70,6 +71,9 @@ export default function ZoneDetailsModal({
         .then((data) => {
           if (isMounted && data) {
             setLiveWeather(data);
+            if (onUpdateZoneWeather && zone.area_name) {
+              onUpdateZoneWeather(zone.area_name, data);
+            }
           }
         })
         .catch(() => {});
@@ -78,7 +82,7 @@ export default function ZoneDetailsModal({
     return () => {
       isMounted = false;
     };
-  }, [zone]);
+  }, [zone, onUpdateZoneWeather]);
 
   const rainfall = liveWeather.rainfall !== undefined ? Number(liveWeather.rainfall) : (zone.rainfall !== undefined ? Number(zone.rainfall) : initialFallback.rainfall);
   const humidity = liveWeather.humidity !== undefined ? Number(liveWeather.humidity) : (zone.humidity !== undefined ? Number(zone.humidity) : initialFallback.humidity);

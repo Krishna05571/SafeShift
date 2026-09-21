@@ -24,6 +24,7 @@ import {
   getHighwayRouteGeometry,
   fetchLiveOsrmHighway,
   getEffectiveZoneRisk,
+  fetchLiveOpenMeteoWeather,
 } from './utils/geoUtils';
 import './App.css';
 
@@ -254,6 +255,44 @@ function App() {
     setShowAltRoutesModal(false);
   };
 
+  // Update zone meteorological properties dynamically across map & state
+  const handleUpdateZoneWeather = useCallback((areaName, weatherData) => {
+    if (!areaName || !weatherData) return;
+    setGeoData((prevGeo) => {
+      if (!prevGeo?.features) return prevGeo;
+      const updatedFeatures = prevGeo.features.map((f) => {
+        if (f.properties?.area_name === areaName) {
+          return {
+            ...f,
+            properties: {
+              ...f.properties,
+              ...weatherData,
+            },
+          };
+        }
+        return f;
+      });
+      return {
+        ...prevGeo,
+        features: updatedFeatures,
+        metadata: {
+          ...(prevGeo.metadata || {}),
+          cached_at: Date.now(),
+        },
+      };
+    });
+
+    setSelectedZone((prevSelected) => {
+      if (prevSelected && prevSelected.area_name === areaName) {
+        return {
+          ...prevSelected,
+          ...weatherData,
+        };
+      }
+      return prevSelected;
+    });
+  }, []);
+
   // Fetch all core datasets with resilient fallback
   const fetchAllData = async (forceRefreshWeather = false) => {
     try {
@@ -263,6 +302,7 @@ function App() {
       setError(null);
 
       const isLive = riskMode === 'live';
+      let fetchedFromServer = false;
       
       // 1. Fetch live zones with 2500ms timeout
       try {
@@ -271,10 +311,48 @@ function App() {
           const zonesData = await zonesRes.json();
           if (zonesData?.features?.length > 0) {
             setGeoData(zonesData);
+            fetchedFromServer = true;
           }
         }
       } catch (zoneErr) {
         // Fallback already pre-loaded into state
+      }
+
+      // If server is not responding, enrich hazard zones with live Open-Meteo data directly on client
+      if (!fetchedFromServer && initialGeoData?.features) {
+        const enrichPromises = initialGeoData.features.map(async (f) => {
+          const p = f.properties || {};
+          if (p.safe || p.location_type === 'relocation_site') return f;
+          const lat = p.centroid_lat || p.lat;
+          const lon = p.centroid_lon || p.lon;
+          if (!lat || !lon) return f;
+          try {
+            const w = await fetchLiveOpenMeteoWeather(lat, lon);
+            if (w) {
+              return {
+                ...f,
+                properties: {
+                  ...p,
+                  ...w,
+                },
+              };
+            }
+          } catch (e) {}
+          return f;
+        });
+
+        Promise.all(enrichPromises).then((enriched) => {
+          if (enriched && enriched.length > 0) {
+            setGeoData((prev) => ({
+              ...prev,
+              features: enriched,
+              metadata: {
+                ...(prev?.metadata || {}),
+                cached_at: Date.now(),
+              },
+            }));
+          }
+        });
       }
 
       // 2. Fetch weather impact summary in parallel with 2500ms timeout
@@ -745,6 +823,7 @@ function App() {
                   loadingRoute={loadingRoute}
                   theme={theme}
                   riskMode={riskMode}
+                  onUpdateZoneWeather={handleUpdateZoneWeather}
                 />
               )}
             </div>
@@ -796,6 +875,7 @@ function App() {
                     loadingRoute={loadingRoute}
                     theme={theme}
                     riskMode={riskMode}
+                    onUpdateZoneWeather={handleUpdateZoneWeather}
                   />
                 )}
               </div>
