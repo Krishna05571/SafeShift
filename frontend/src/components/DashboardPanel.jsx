@@ -13,13 +13,14 @@ import {
   CartesianGrid,
 } from 'recharts';
 import RelocationTable from './RelocationTable';
-import { getEffectiveZoneRisk, getEffectiveZonePriority } from '../utils/geoUtils';
+import { getActiveZonePopulation, getEffectiveZoneRisk, getEffectiveZonePriority, groupRelocationPlanByOrigin } from '../utils/geoUtils';
 
 const PIE_COLORS = {
   high: '#ef4444',
   medium: '#f97316',
   low: '#eab308',
 };
+const RISK_SCORES = { high: 3, medium: 2, low: 1 };
 
 // Custom Tooltip for charts supporting theme
 const CustomBarTooltip = ({ active, payload, label, theme }) => {
@@ -49,7 +50,11 @@ const CustomBarTooltip = ({ active, payload, label, theme }) => {
         {payload.map((entry, index) => (
           <p key={index} style={{ color: entry.color, margin: '3px 0', fontSize: '12px' }}>
             <strong>{entry.name}: </strong>
-            {typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}
+            {entry.name === 'Utilization (%)'
+              ? `${Number(entry.value).toFixed(1)}%`
+              : typeof entry.value === 'number'
+              ? entry.value.toLocaleString()
+              : entry.value}
           </p>
         ))}
       </div>
@@ -61,8 +66,10 @@ const CustomBarTooltip = ({ active, payload, label, theme }) => {
 export default function DashboardPanel({
   geoData,
   relocationPlan = [],
+  stats = null,
   theme = 'dark',
   riskMode = 'baseline',
+  safeZoneStatus = null,
   onTraceRoute = null,
   onLocateZone = null,
 }) {
@@ -76,6 +83,7 @@ export default function DashboardPanel({
     let immediatePriorityCount = 0;
     let totalSafeCapacity = 0;
     let totalRelocatedPeople = 0;
+    let featurePopulationTotal = 0;
 
     // From geoData
     if (geoData && geoData.features) {
@@ -88,16 +96,39 @@ export default function DashboardPanel({
         } else {
           const risk = getEffectiveZoneRisk(p, riskMode).toLowerCase();
           const priority = getEffectiveZonePriority(p, riskMode).toLowerCase();
-          const population = Number(p.population) || 0;
+          const population = getActiveZonePopulation(p, 0);
+          featurePopulationTotal += population;
 
-          if (risk === 'high') {
-            highRiskPopulation += population;
-          }
           if (priority === 'immediate') {
             immediatePriorityCount += 1;
           }
         }
       });
+    }
+
+    if (relocationPlan.length > 0) {
+      groupRelocationPlanByOrigin(relocationPlan).forEach((originPlan) => {
+        const zone = geoData?.features?.find((feature) => feature.properties?.area_name === originPlan.from);
+        const activeRisk = zone?.properties
+          ? getEffectiveZoneRisk(zone.properties, riskMode).toLowerCase()
+          : (originPlan.risk || 'medium').toLowerCase();
+        if (activeRisk === 'high') {
+          highRiskPopulation += Number(originPlan.people) || 0;
+        }
+      });
+    } else {
+      highRiskPopulation = (geoData?.features || []).reduce((sum, feature) => {
+        const props = feature.properties || {};
+        if (props.safe === true || props.location_type === 'relocation_site') return sum;
+        return getEffectiveZoneRisk(props, riskMode).toLowerCase() === 'high'
+          ? sum + getActiveZonePopulation(props, 0)
+          : sum;
+      }, 0);
+    }
+
+    const liveCapacity = Number(safeZoneStatus?.summary?.total_capacity);
+    if (Number.isFinite(liveCapacity) && liveCapacity > 0) {
+      totalSafeCapacity = liveCapacity;
     }
 
     // From relocationPlan
@@ -109,38 +140,60 @@ export default function DashboardPanel({
     }
 
     return {
+      totalActivePopulation: Number(stats?.totalPopulation) || (totalRelocatedPeople || featurePopulationTotal),
       highRiskPopulation,
       immediatePriorityCount,
       totalSafeCapacity,
       totalRelocatedPeople,
     };
-  }, [geoData, relocationPlan, riskMode]);
+  }, [geoData, relocationPlan, riskMode, safeZoneStatus, stats?.totalPopulation]);
 
   // 2. Chart Data: Relocation Allocations by Origin & Destination
   const routeChartData = useMemo(() => {
     if (!relocationPlan || relocationPlan.length === 0) return [];
-    return relocationPlan.map((r) => {
+    return groupRelocationPlanByOrigin(relocationPlan).map((r) => {
       const zoneFeat = geoData?.features?.find((f) => f.properties?.area_name === r.from);
       const activeRisk = (
         zoneFeat?.properties
           ? getEffectiveZoneRisk(zoneFeat.properties, riskMode)
           : (r.risk || 'medium')
-      ).toUpperCase();
+      ).toLowerCase();
+      const activePopulation = Number(r.people) || 0;
+      const distances = r.allocations
+        .map((allocation) => Number(allocation.distance_km))
+        .filter((distance) => Number.isFinite(distance) && distance > 0);
 
       return {
         name: r.from.replace(' Zone', ''),
         fullName: r.from,
-        destination: r.to,
+        destination: r.allocations.map((allocation) => `${allocation.to} (${Number(allocation.people || 0).toLocaleString()})`).join(', '),
         people: r.people,
-        distance: r.distance_km || 0,
-        priority: r.priority_score,
-        risk: activeRisk,
+        distance: distances.length ? Math.min(...distances) : 0,
+        priority: (RISK_SCORES[activeRisk] || 1) * (Number(activePopulation) || 0),
+        risk: activeRisk.toUpperCase(),
       };
     });
   }, [relocationPlan, geoData, riskMode]);
 
   // 3. Chart Data: Population Distribution by Risk Level
   const riskDistributionData = useMemo(() => {
+    if (relocationPlan.length > 0) {
+      const counts = { high: 0, medium: 0, low: 0 };
+      groupRelocationPlanByOrigin(relocationPlan).forEach((originPlan) => {
+        const zone = geoData?.features?.find((feature) => feature.properties?.area_name === originPlan.from);
+        const risk = zone?.properties
+          ? getEffectiveZoneRisk(zone.properties, riskMode).toLowerCase()
+          : (originPlan.risk || 'medium').toLowerCase();
+        if (counts[risk] !== undefined) counts[risk] += Number(originPlan.people) || 0;
+      });
+
+      return [
+        { name: 'High Risk', value: counts.high, color: PIE_COLORS.high },
+        { name: 'Medium Risk', value: counts.medium, color: PIE_COLORS.medium },
+        { name: 'Low Risk', value: counts.low, color: PIE_COLORS.low },
+      ].filter((item) => item.value > 0);
+    }
+
     if (!geoData || !geoData.features) return [];
     const counts = { high: 0, medium: 0, low: 0 };
 
@@ -150,7 +203,7 @@ export default function DashboardPanel({
       if (!isSafe) {
         const risk = getEffectiveZoneRisk(p, riskMode).toLowerCase();
         if (counts[risk] !== undefined) {
-          counts[risk] += Number(p.population) || 0;
+          counts[risk] += getActiveZonePopulation(p, 0);
         }
       }
     });
@@ -160,58 +213,77 @@ export default function DashboardPanel({
       { name: 'Medium Risk', value: counts.medium, color: PIE_COLORS.medium },
       { name: 'Low Risk', value: counts.low, color: PIE_COLORS.low },
     ].filter((item) => item.value > 0);
-  }, [geoData, riskMode]);
+  }, [geoData, relocationPlan, riskMode]);
 
   // 4. Chart Data: Safe Zone Utilization (Allocated vs Total Capacity)
   const safeZoneUtilizationData = useMemo(() => {
     if (!geoData || !geoData.features) return [];
     const safeZonesMap = {};
+    const liveSafeZones = safeZoneStatus?.safe_zones;
 
-    // Initialize with safe zones from GeoJSON
-    geoData.features.forEach((f) => {
-      const p = f.properties || {};
-      if (p.safe === true || p.location_type === 'relocation_site') {
-        const name = p.area_name || 'Safe Zone';
-        safeZonesMap[name] = {
-          name,
-          totalCapacity: Number(p.capacity) || 0,
-          allocatedPeople: 0,
+    if (liveSafeZones?.length) {
+      liveSafeZones.forEach((zone) => {
+        safeZonesMap[zone.name] = {
+          name: zone.name,
+          totalCapacity: Number(zone.total_capacity) || 0,
+          currentOccupancy: Number(zone.current_occupancy) || 0,
+          utilization: Math.min(100, Math.max(0, Number(zone.fill_percentage) || 0)),
         };
-      }
-    });
-
-    // Add allocated people from relocation plan
-    if (relocationPlan) {
-      relocationPlan.forEach((r) => {
-        if (safeZonesMap[r.to]) {
-          safeZonesMap[r.to].allocatedPeople += Number(r.people) || 0;
+      });
+    } else {
+      geoData.features.forEach((f) => {
+        const p = f.properties || {};
+        if (p.safe === true || p.location_type === 'relocation_site') {
+          const name = p.area_name || 'Safe Zone';
+          const capacity = Number(p.capacity) || 0;
+          const utilization = Math.min(100, Math.max(0, Number(p.fill_percentage) || 0));
+          safeZonesMap[name] = {
+            name,
+            totalCapacity: capacity,
+            currentOccupancy: Math.round(capacity * utilization / 100),
+            utilization,
+          };
         }
       });
     }
 
     return Object.values(safeZonesMap).map((sz) => ({
       name: sz.name,
-      'Allocated People': sz.allocatedPeople,
-      'Remaining Capacity': Math.max(0, sz.totalCapacity - sz.allocatedPeople),
-      'Total Capacity': sz.totalCapacity,
+      occupancy: sz.currentOccupancy,
+      capacity: sz.totalCapacity,
+      utilization: sz.utilization,
+      'Utilization (%)': sz.utilization,
     }));
-  }, [geoData, relocationPlan]);
+  }, [geoData, safeZoneStatus]);
 
   return (
     <div className="dashboard-panel-container">
       {/* 4 Core KPI Summary Cards at Top */}
       <div className="kpi-grid">
+        <div className="kpi-card kpi-info">
+          <div className="kpi-details">
+            <span className="kpi-label">Population at Risk</span>
+            <div className="kpi-val-group">
+              <span className="kpi-value text-blue">
+                {metrics.totalActivePopulation.toLocaleString()}
+              </span>
+              <span className="kpi-unit">citizens</span>
+            </div>
+            <span className="kpi-hint">Same active total shown on the GIS map</span>
+          </div>
+        </div>
+
         {/* Metric 1 */}
         <div className="kpi-card kpi-critical">
           <div className="kpi-details">
-            <span className="kpi-label">High-Risk Population</span>
+            <span className="kpi-label">High-Risk Subset</span>
             <div className="kpi-val-group">
               <span className="kpi-value text-red">
                 {metrics.highRiskPopulation.toLocaleString()}
               </span>
               <span className="kpi-unit">citizens</span>
             </div>
-            <span className="kpi-hint">Requires immediate dispatch</span>
+            <span className="kpi-hint">Population in high-risk zones only</span>
           </div>
         </div>
 
@@ -246,14 +318,14 @@ export default function DashboardPanel({
         {/* Metric 4 */}
         <div className="kpi-card kpi-info">
           <div className="kpi-details">
-            <span className="kpi-label">People Relocated</span>
+            <span className="kpi-label">Evacuation Plan Total</span>
             <div className="kpi-val-group">
               <span className="kpi-value text-blue">
                 {metrics.totalRelocatedPeople.toLocaleString()}
               </span>
-              <span className="kpi-unit">assigned</span>
+              <span className="kpi-unit">allocated</span>
             </div>
-            <span className="kpi-hint">100% capacity accommodated</span>
+              <span className="kpi-hint">Includes shelter splits and overflow entries</span>
           </div>
         </div>
       </div>
@@ -319,7 +391,7 @@ export default function DashboardPanel({
         <div className="chart-card chart-card-wide">
           <div className="chart-header">
             <h4>Safe Shelter Capacity Utilization</h4>
-            <span className="chart-badge">Capacity vs Load</span>
+          <span className="chart-badge">Current occupancy by shelter</span>
           </div>
           <div className="chart-body">
             <ResponsiveContainer width="100%" height={250}>
@@ -329,16 +401,21 @@ export default function DashboardPanel({
               >
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
                 <XAxis dataKey="name" stroke={axisTextColor} fontSize={12} />
-                <YAxis stroke={axisTextColor} fontSize={12} />
-                <Tooltip content={<CustomBarTooltip theme={theme} />} />
-                <Legend wrapperStyle={{ fontSize: '12px' }} />
-                <Bar dataKey="Allocated People" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
-                <Bar
-                  dataKey="Remaining Capacity"
-                  stackId="a"
-                  fill={isLight ? '#cbd5e1' : '#334155'}
-                  radius={[6, 6, 0, 0]}
+                <YAxis
+                  stroke={axisTextColor}
+                  fontSize={12}
+                  domain={[0, 100]}
+                  tickFormatter={(value) => `${value}%`}
                 />
+                <Tooltip content={<CustomBarTooltip theme={theme} />} />
+                <Bar dataKey="Utilization (%)" radius={[5, 5, 0, 0]}>
+                  {safeZoneUtilizationData.map((zone) => (
+                    <Cell
+                      key={zone.name}
+                      fill={zone.utilization >= 90 ? '#ef4444' : zone.utilization >= 70 ? '#f59e0b' : '#10b981'}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

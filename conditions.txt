@@ -18,6 +18,10 @@ TABLE OF CONTENTS
 8. Emergency Relocation Triage & Priority Scoring Model
 9. Highway Navigation & Routing Physics Model
 10. Google Gemini AI Situational Intelligence & Operational Directive Evaluation Model
+11. End-to-End Application Runtime Workflow
+12. Operator Workflows
+13. API Workflow And Integration Boundaries
+14. Local Development, Deployment & Data Maintenance
 
 ================================================================================
 1. METEOROLOGICAL INGESTION & LIVE WEATHER MAPPINGS
@@ -366,5 +370,217 @@ between live weather and baseline views on the command dashboard:
 All situational summaries, sector reasons, and operational directives are enforced to follow 
 formal National Disaster Management Authority (NDMA) reporting standards without emojis or 
 informal symbols.
+================================================================================
+
+================================================================================
+11. END-TO-END APPLICATION RUNTIME WORKFLOW
+================================================================================
+This section describes the flow implemented by the current frontend and backend. Where
+marketing copy, this reference, and runtime code differ, the implementation is authoritative.
+
+A. BROWSER STARTUP AND FALLBACK STATE:
+--------------------------------------------------------------------------------
+1. Vite serves frontend/index.html, which loads frontend/src/main.jsx. React mounts
+   frontend/src/App.jsx under StrictMode.
+2. App.jsx imports frontend/src/data/hazard_zones.json and
+   frontend/src/data/initial_highway_routes.json. geoUtils.js derives centroids,
+   client-side demographic/capacity estimates, an initial baseline relocation plan,
+   and initial safe-zone occupancy so the app can render before the API responds.
+3. The initial view is the landing page. Launch Command Center switches directly to
+   the operational workspace, initially on the GIS map.
+4. On mount, App.jsx requests /zones/live, /weather-impact, /relocation-plan, and
+   /safezones/status. Most requests have a 2.5-second timeout. The UI remains usable
+   when the backend is unavailable by retaining bundled data and using browser-side
+   weather, relocation, route, and capacity fallbacks.
+5. The app polls /safezones/status?auto_tick=true every 4 seconds. Successful backend
+   requests advance the in-memory occupancy simulation. If the request fails, the
+   browser applies a small synthetic fill change. Core zone/weather requests refresh
+   on a 10-minute interval; weather service cache TTL is also 10 minutes.
+
+B. BACKEND DATA AND LIVE WEATHER:
+--------------------------------------------------------------------------------
+1. backend/main.py loads GeoJSON at process startup, searching backend/data and
+   repository-level data locations, then initializes safezone_manager from it.
+   The browser's bundled GeoJSON is an independent startup fallback.
+2. /zones/live and /weather-impact call get_live_zones_with_weather in
+   backend/weather_service.py. A warm cache is returned immediately. On cold start,
+   deterministic fallback weather is assembled and a background refresh begins.
+3. The zone refresh uses batched Open-Meteo requests. Failed/incomplete fetches use
+   geographic fallback weather. The single-coordinate weather helper can use
+   OpenWeatherMap when configured, then Open-Meteo, then fallback; the batch zone
+   refresh path uses Open-Meteo and fallback.
+4. Zone features are enriched with weather, centroids, population demographics,
+   and safe-zone capacities. backend/population_service.py estimates resident
+   population from geometry, estimates visitor capacity using OpenStreetMap Overpass
+   accommodation data where available, and applies time/season occupancy factors.
+   Safe-zone capacity is estimated from polygon area and the 3.5 m2-per-person rule,
+   subject to configured minimum and maximum values.
+5. For hazards, predict_risk classifies live risk from rainfall: floods use 64.5 mm
+   and 115.6 mm thresholds; landslides use 35.5 mm and 64.5 mm thresholds. The prior
+   risk is retained as baseline_risk, risk is set to the live result, and escalation
+   alerts are attached to weather metadata.
+
+C. RELOCATION PLAN AND ROUTE METRICS:
+--------------------------------------------------------------------------------
+1. /relocation-plan?live=true uses weather-enriched GeoJSON; live=false uses base
+   GeoJSON. Both call generate_relocation_plan in backend/relocation.py.
+2. The planner separates hazard and safe features, calculates polygon centroids,
+   and sorts hazards by descending risk_score * population (3/2/1 for high/medium/low).
+3. In that priority order, each hazard ranks shelters by great-circle Haversine
+   distance and allocates evacuees to available capacity. An origin can split over
+   several shelters; any remainder is returned as an unassigned overflow row.
+4. Plan distance/time values come from backend/routing.py's simple road-metrics
+   model (Haversine distance multiplied by 1.25, then 50 km/h). This is separate
+   from detailed route geometry.
+5. Detailed backend geometry checks the precomputed route cache, optional
+   OpenRouteService, public OSRM, then a curved interpolation fallback. The browser
+   also bundles route geometry and calls OSRM directly if a local route is missing
+   or sparse. Displaying a route does not validate live road closures.
+
+D. SHELTER CAPACITY, AI, AND SCENARIO SERVICES:
+--------------------------------------------------------------------------------
+1. backend/safezone_service.py stores occupancy in a process-local in-memory manager.
+   It calculates occupancy, remaining capacity, estimated time-to-full, and alerts
+   at 70%, 90%, and 100%. /safezones/update can tick or reset this state.
+2. Alternate safe havens exclude the current shelter, require available capacity
+   where possible, and are ranked by road-distance and remaining-capacity score.
+   /safezones/multi-routes packages a primary route and up to two alternate routes.
+3. /ai-explain builds a plan for baseline/live mode and calls
+   backend/gemini_explainer.py. Gemini is optional; the service caches responses
+   for five minutes and returns a deterministic rule-based briefing when the key,
+   provider, or request is unavailable.
+4. /simulate-disaster invokes backend/simulation.py for a 0-60 minute projection.
+   It enriches live weather, dilates flood polygons, estimates landslide probability,
+   recomputes relocations, projects shelter loading, and returns alerts and spillover
+   recommendations. The endpoint exists, but the current React app does not call it.
+
+================================================================================
+12. OPERATOR WORKFLOWS
+================================================================================
+A. MAP AND RISK REVIEW:
+--------------------------------------------------------------------------------
+1. Open GIS Map View or Split Command View.
+2. Choose Baseline Vulnerability or Live Weather Risk. The app requests a matching
+   relocation plan; risk colors, statistics, alerts, and table labels follow the
+   selected mode. Live weather zone data is loaded independently during refresh.
+3. Toggle filter chips to show all zones or selected risk, hazard, and safe-zone
+   layers. Selecting a polygon opens ZoneDetailsModal with risk, population,
+   demographics, weather, shelter matches, and route actions.
+4. If rainfall is absent on the selected zone, the details panel can request
+   browser-side Open-Meteo weather and update the zone in app state.
+5. Locate/Inspect actions select the feature, switch from dashboard/capacity to the
+   map when needed, and zoom to its polygon or centroid.
+
+B. REVIEW THE RELOCATION PLAN AND TRACE A ROUTE:
+--------------------------------------------------------------------------------
+1. Open Analytics & Relocation for KPIs, charts, and the searchable/filterable
+   RelocationTable, or use the dashboard portion of Split Command View.
+2. Trace from a table row or zone detail resolves origin/destination coordinates,
+   checks bundled geometry and the in-memory cache, draws an immediate local route,
+   then may replace it with a live OSRM route.
+3. The map fits the route bounds. Escape clears the detailed or multi-route overlay.
+
+C. MONITOR SHELTERS AND COMPARE ALTERNATES:
+--------------------------------------------------------------------------------
+1. Open Shelter Capacities to review occupancy, available beds, projected fill,
+   status alerts, and active relocation rows. GeoJSON-derived values are used if
+   live capacity status is unavailable.
+2. The page can compute display-level automatic destination changes when the
+   assigned shelter is at least 90% full and auto-rerouting is enabled. Its row
+   alternate dropdown stores manual reroutes in page-local state and can trace the
+   selected route.
+3. View Alternate Routes first builds a client-side comparison, then requests
+   /safezones/multi-routes for backend geometry and capacity information.
+4. Confirm & Activate Route draws the selected corridor and updates matching rows
+   in App.jsx relocation-plan state. This is distinct from the capacity page's
+   local dropdown reroute state.
+5. Reset Simulation posts { "reset": true } to /safezones/update. If the API fails,
+   the browser restores its initial client-side capacity estimate.
+6. Capacity toasts expose alternate-route and locate actions. The smart weather
+   alert banner derives alerts from weather metadata and current zone properties.
+
+D. GENERATE AN OPERATIONAL BRIEFING:
+--------------------------------------------------------------------------------
+1. Open AI Briefing from the operations header.
+2. The modal renders an immediate local briefing from the current plan, then
+   requests /ai-explain for the active risk mode.
+3. Switching Baseline/Live updates app risk mode and requests another briefing.
+   Regenerate repeats the request; backend fallback behavior is described in
+   Section 11.D.
+
+================================================================================
+13. API WORKFLOW AND INTEGRATION BOUNDARIES
+================================================================================
+ENDPOINT                       CONSUMER / PURPOSE
+--------------------------------------------------------------------------------
+GET /                          Health check and endpoint listing
+GET /zones                     Backend capability; not called by current React app
+GET /zones/live                App startup/refresh: zones, weather, risk, demographics
+GET /weather-impact             App startup/refresh: impact summaries and smart alerts
+GET /relocation-plan?live=      App startup and mode changes: relocation allocation
+GET /route-geometry             Backend capability; current map tracing calls client OSRM
+GET|POST /simulate-disaster     Backend capability; current React app does not call it
+GET /safezones/status           App startup and 4-second occupancy polling
+POST /safezones/update          Capacity tick/reset, including UI reset
+GET /safezones/alternatives     Backend candidate safe-haven ranking
+GET /safezones/multi-routes     Alternate-route modal data
+GET /ai-explain?mode=           Mounted AI briefing modal
+POST /ai-explain                Backend capability; current React app uses GET
+
+PRESENT BUT NOT WIRED INTO THE MAIN JOURNEY:
+- frontend/src/components/CommandCenterEntry.jsx contains scenario, region, and risk
+  controls, but App.jsx does not import/render it. Landing launch goes directly to
+  the command workspace; scenario/region selection does not filter the current data.
+- frontend/src/components/SimulationController.jsx is not imported/rendered by App.jsx.
+  The backend simulator is callable independently, but its projection is not applied
+  to the frontend map, relocation plan, or timeline controls.
+- Safe-zone occupancy is process-local memory. It resets on backend restart and is
+  not shared across multiple workers/instances.
+
+IMPLEMENTATION ALIGNMENT NOTES:
+- backend/relocation.py implements greedy priority-ordered nearest-capacity matching;
+  it does not invoke SciPy or solve a linear program, despite LP claims elsewhere.
+- Detailed route geometry is not proof of current road status or closure avoidance.
+- /safezones/multi-routes uses backend route geometry, while ordinary plan tracing
+  currently uses client-side cached geometry and direct browser OSRM.
+
+================================================================================
+14. LOCAL DEVELOPMENT, DEPLOYMENT & DATA MAINTENANCE
+================================================================================
+LOCAL DEVELOPMENT (run backend and frontend in separate terminals from repository root):
+
+Backend:
+  cd backend
+  ..\venv\Scripts\Activate.ps1
+  python -m uvicorn main:app --host 127.0.0.1 --port 8005 --reload
+
+Frontend:
+  cd frontend
+  npm install
+  npm run dev
+
+The Vite server is configured for port 3000. Frontend API base defaults to
+http://127.0.0.1:8005; set VITE_API_BASE_URL to target another backend. Backend
+optional integrations are configured in backend/.env: GEMINI_API_KEY,
+OPENROUTESERVICE_API_KEY, and optionally OPENWEATHERMAP_API_KEY.
+
+Useful frontend checks from frontend/:
+  npm run lint
+  npm run build
+
+DEPLOYMENT AND DATA MAINTENANCE:
+- Root vercel.json and frontend/vercel.json build the Vite frontend. Set
+  VITE_API_BASE_URL in Vercel to the deployed API; localhost is for local use only.
+- render.yaml configures the FastAPI service rooted at backend/. Its current
+  startCommand ends with "--port " but has no port value; verify it before relying
+  on Render deployment.
+- Backend and frontend GeoJSON are separate copies: backend/data/hazard_zones.geojson
+  and frontend/src/data/hazard_zones.json. Keep them aligned when editing zones.
+- backend/generate_all_india_data.py writes to a developer-specific absolute Windows
+  path. Check/update that output path before using it in another environment.
+- backend/precompute.py expects to run from repository root, reads data/hazard_zones.geojson,
+  and writes data/precomputed_routes.json. Verify routing sources before generating.
+- The backend has no test command configured in project metadata. Use implementation
+  files as the source of runtime truth when documented claims and code differ.
 ================================================================================
 

@@ -7,6 +7,7 @@ import urllib.parse
 from typing import Dict, Any, List, Tuple, Optional
 from concurrent.futures import ThreadPoolExecutor
 from shapely.geometry import shape
+from population_service import get_dynamic_zone_population
 
 # Configuration
 CACHE_TTL_SECONDS = 600  # 10 minutes cache TTL
@@ -334,9 +335,14 @@ def _build_geo_dataset(
         new_props["centroid_lat"] = round(lat, 5)
         new_props["centroid_lon"] = round(lon, 5)
 
+        # Compute dynamic population and tourist breakdown from live APIs
+        pop_data = get_dynamic_zone_population(feature_copy, query_osm=False)
+        pop = pop_data.get("population", int(new_props.get("population", 7500)))
+        new_props["population"] = pop
+        new_props["demographics"] = pop_data.get("demographics", {})
+
         if not is_safe:
             prev_risk = str(new_props.get("risk", "low")).lower()
-            pop = int(new_props.get("population", 0))
 
             # Run Dynamic Risk Prediction Logic
             pred_risk, priority, risk_score, alert_msg = predict_risk(new_props, w_data)
@@ -364,6 +370,7 @@ def _build_geo_dataset(
                 "area_name": new_props.get("area_name"),
                 "hazard_type": new_props.get("hazard_type"),
                 "population": pop,
+                "demographics": new_props["demographics"],
                 "rainfall_mm": w_data["rainfall"],
                 "humidity_pct": w_data["humidity"],
                 "temp_c": w_data["temperature"],
@@ -377,6 +384,10 @@ def _build_geo_dataset(
         else:
             new_props["risk"] = "safe"
             new_props["priority_score"] = 0
+            # Write back dynamic Sphere-standard capacity so frontend always sees live value
+            dynamic_capacity = pop_data.get("total_capacity") or pop_data.get("capacity")
+            if dynamic_capacity:
+                new_props["capacity"] = int(dynamic_capacity)
 
         feature_copy["properties"] = new_props
         updated_features.append(feature_copy)

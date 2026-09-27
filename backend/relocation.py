@@ -48,7 +48,14 @@ def generate_relocation_plan(geo_data: Dict[str, Any]) -> List[Dict[str, Any]]:
             })
         else:
             risk = str(props.get("risk", "low")).lower()
-            population = int(props.get("population", 0))
+            population = int(props.get("population") or 0)
+            if population <= 0:
+                try:
+                    from population_service import get_dynamic_zone_population
+                    pop_info = get_dynamic_zone_population(f)
+                    population = pop_info.get("population", 7500)
+                except Exception:
+                    population = 7500
             
             # Step 1: Assign risk score
             risk_score = RISK_SCORES.get(risk, 1)

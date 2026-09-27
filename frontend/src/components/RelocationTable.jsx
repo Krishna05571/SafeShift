@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { getEffectiveZoneRisk, groupRelocationPlanByOrigin } from '../utils/geoUtils';
+
+const RISK_SCORES = { high: 3, medium: 2, low: 1 };
 
 export default function RelocationTable({
   relocationPlan = [],
@@ -11,17 +14,17 @@ export default function RelocationTable({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRisk, setFilterRisk] = useState('all');
 
-  const filteredPlan = relocationPlan.filter((item) => {
+  const groupedPlan = groupRelocationPlanByOrigin(relocationPlan);
+  const filteredPlan = groupedPlan.filter((item) => {
     const zoneFeat = geoData?.features?.find((f) => f.properties?.area_name === item.from);
-    const activeRisk = (
-      riskMode === 'baseline'
-        ? (zoneFeat?.properties?.baseline_risk || item.baseline_risk || item.risk || 'medium')
-        : (item.risk || zoneFeat?.properties?.risk || 'medium')
-    ).toLowerCase();
+    const activeRisk = zoneFeat?.properties
+      ? getEffectiveZoneRisk(zoneFeat.properties, riskMode).toLowerCase()
+      : (riskMode === 'baseline' ? (item.baseline_risk || item.risk || 'medium') : (item.risk || 'medium')).toLowerCase();
+    const destinations = item.allocations.map((allocation) => allocation.to).join(' ');
 
     const matchesSearch =
       item.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.to.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      destinations.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.hazard_type && item.hazard_type.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesRisk =
@@ -88,18 +91,20 @@ export default function RelocationTable({
             ) : (
               filteredPlan.map((item, idx) => {
                 const zoneFeat = geoData?.features?.find((f) => f.properties?.area_name === item.from);
-                const activeRisk = (
-                  riskMode === 'baseline'
-                    ? (zoneFeat?.properties?.baseline_risk || item.baseline_risk || item.risk || 'medium')
-                    : (item.risk || zoneFeat?.properties?.risk || 'medium')
-                ).toLowerCase();
+                const activeRisk = zoneFeat?.properties
+                  ? getEffectiveZoneRisk(zoneFeat.properties, riskMode).toLowerCase()
+                  : (riskMode === 'baseline' ? (item.baseline_risk || item.risk || 'medium') : (item.risk || 'medium')).toLowerCase();
+                const priorityScore = (RISK_SCORES[activeRisk] || 1) * (Number(item.people) || 0);
+                const routedAllocations = item.allocations.filter((allocation) =>
+                  allocation.to && !allocation.to.toUpperCase().includes('UNASSIGNED')
+                );
+                const primaryAllocation = routedAllocations[0];
 
                 const isHigh = activeRisk === 'high';
                 const isMedium = activeRisk === 'medium';
-                const isUnassigned = item.to?.includes('UNASSIGNED');
 
                 return (
-                  <tr key={idx} className={`table-row-${activeRisk}`}>
+                  <tr key={item.from || idx} className={`table-row-${activeRisk}`}>
                     <td>
                       <div className="table-cell-zone">
                         <strong>{item.from}</strong>
@@ -121,12 +126,19 @@ export default function RelocationTable({
                     </td>
                     <td>
                       <span className="priority-score-badge font-mono">
-                        {item.priority_score?.toLocaleString()}
+                        {priorityScore.toLocaleString()}
                       </span>
                     </td>
                     <td>
-                      <div className="safe-destination-tag">
-                        <strong>{item.to}</strong>
+                      <div className="dispatch-allocation-list">
+                        {item.allocations.map((allocation, allocationIndex) => (
+                          <div className="dispatch-allocation-row" key={`${allocation.to}-${allocationIndex}`}>
+                            <strong className="dispatch-shelter-name">{allocation.to}</strong>
+                            <span className="dispatch-people-count">
+                              {(Number(allocation.people) || 0).toLocaleString()} people
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </td>
                     <td>
@@ -135,25 +147,37 @@ export default function RelocationTable({
                       </strong>
                     </td>
                     <td>
-                      <span className="distance-badge font-mono">
-                        {item.distance_km ? `${item.distance_km} km` : 'N/A'}
-                      </span>
+                      <div className="dispatch-allocation-list dispatch-metric-list">
+                        {item.allocations.map((allocation, allocationIndex) => (
+                          <div className="dispatch-allocation-row" key={`${allocation.to}-distance-${allocationIndex}`}>
+                            <span className="distance-badge font-mono">
+                              {allocation.distance_km ? `${allocation.distance_km} km` : 'N/A'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </td>
                     <td>
-                      <span className="time-badge font-mono">
-                        {item.travel_time_min ? `${item.travel_time_min} min` : 'N/A'}
-                      </span>
+                      <div className="dispatch-allocation-list dispatch-metric-list">
+                        {item.allocations.map((allocation, allocationIndex) => (
+                          <div className="dispatch-allocation-row" key={`${allocation.to}-time-${allocationIndex}`}>
+                            <span className="time-badge font-mono">
+                              {allocation.travel_time_min ? `${allocation.travel_time_min} min` : 'N/A'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </td>
                     <td>
                       <div className="table-actions-cell">
-                        {onTraceRoute && !isUnassigned && (
+                        {onTraceRoute && primaryAllocation && (
                           <button
                             type="button"
                             className="btn-matrix-trace"
                             onClick={() => {
                               onTraceRoute({
-                                ...item,
-                                origin_coords: item.origin_coords || (zoneFeat?.properties ? [zoneFeat.properties.centroid_lat, zoneFeat.properties.centroid_lon] : null),
+                                ...primaryAllocation,
+                                origin_coords: primaryAllocation.origin_coords || (zoneFeat?.properties ? [zoneFeat.properties.centroid_lat, zoneFeat.properties.centroid_lon] : null),
                               });
                             }}
                             title="Trace highway evacuation route on GIS map"
@@ -182,7 +206,7 @@ export default function RelocationTable({
       </div>
 
       <div className="table-footer">
-        <span>Showing {filteredPlan.length} of {relocationPlan.length} evacuation routes</span>
+        <span>Showing {filteredPlan.length} of {groupedPlan.length} hazard origins ({relocationPlan.length} shelter allocations)</span>
         <span className="algorithm-note">
           Mode: <strong>{riskMode === 'live' ? 'Live Meteorological Prediction' : 'Baseline Vulnerability'}</strong> • Real-world road routing distance & duration
         </span>

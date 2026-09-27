@@ -186,6 +186,33 @@ class SafeZoneCapacityManager:
             self._update_all_metrics()
             return self.get_status_summary()
 
+    def sync_capacities_from_live_geo(self, live_geo_data: Dict[str, Any]) -> None:
+        """
+        Syncs total_capacity for each safe zone from the live-enriched GeoJSON
+        (which carries the Sphere-standard footprint-based capacity computed by
+        population_service). Occupancy and fill percentage are preserved so the
+        live simulation is not disrupted. remaining_capacity is recomputed.
+        """
+        features = live_geo_data.get("features", []) if live_geo_data else []
+        with _STATE_LOCK:
+            for f in features:
+                props = f.get("properties", {})
+                is_safe = props.get("safe") is True or props.get("location_type") == "relocation_site"
+                if not is_safe:
+                    continue
+                name = props.get("area_name")
+                live_cap = props.get("capacity")
+                if name and live_cap and name in self.safe_zones:
+                    live_cap = int(live_cap)
+                    zone = self.safe_zones[name]
+                    if zone["total_capacity"] != live_cap:
+                        zone["total_capacity"] = live_cap
+                        # Clamp occupancy so it never exceeds the new capacity
+                        zone["current_occupancy"] = min(zone["current_occupancy"], live_cap)
+                        zone["remaining_capacity"] = max(0, live_cap - zone["current_occupancy"])
+            self._update_all_metrics()
+
+
     def get_status_summary(self) -> Dict[str, Any]:
         """
         Returns full structured status of all safe zones with alerts and KPI metrics.

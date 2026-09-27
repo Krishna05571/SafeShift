@@ -86,7 +86,7 @@ export default function StatsBar({
 
         <div className="metric-card">
           <div className="metric-content">
-            <span className="metric-label">Vulnerable Population</span>
+            <span className="metric-label">Population at Risk</span>
             <span className="metric-value text-orange">
               {(stats.totalPopulation || 0).toLocaleString()}
             </span>

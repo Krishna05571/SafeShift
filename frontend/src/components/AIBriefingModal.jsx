@@ -5,7 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8005
 
 function generateInstantBriefing(relocationPlan = [], mode = 'baseline') {
   const isLive = mode === 'live';
-  const totalPeople = relocationPlan?.reduce((sum, item) => sum + (Number(item.people) || 0), 0) || 330000;
+  const totalPeople = relocationPlan?.reduce((sum, item) => sum + (Number(item.people) || 0), 0) || 0;
   const highRiskCount = relocationPlan?.filter((item) => (item.risk || '').toLowerCase() === 'high').length || 0;
   const topRoutes = (relocationPlan && relocationPlan.length > 0 ? relocationPlan.slice(0, 6) : []).map((item) => {
     const risk = (item.risk || 'low').toUpperCase();

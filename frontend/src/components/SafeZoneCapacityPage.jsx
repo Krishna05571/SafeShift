@@ -10,7 +10,7 @@ import {
   AlertTriangle,
   RotateCcw,
 } from 'lucide-react';
-import { DEFAULT_SHELTER_OCCUPANCIES } from '../utils/geoUtils';
+import { DEFAULT_SHELTER_OCCUPANCIES, getEffectiveZoneRisk } from '../utils/geoUtils';
 
 /**
  * Dedicated Operations Dashboard for Live Safe Zone Capacity Tracking,
@@ -228,7 +228,7 @@ export default function SafeZoneCapacityPage({
     return relocationPlan.map((planItem, idx) => {
       const originalDest = planItem.to;
       const targetShelter = capacityMap[originalDest];
-      const fill = targetShelter ? (targetShelter.fill_percentage ?? 50) : 60;
+      const fill = targetShelter ? (targetShelter.fill_percentage ?? 50) : null;
       const isCriticalOrFull = fill >= 90;
 
       // Check if user manually rerouted this corridor via dropdown
@@ -276,6 +276,8 @@ export default function SafeZoneCapacityPage({
           ? 'MANUALLY_REROUTED'
           : isAutoRerouted
           ? 'REROUTED'
+          : !targetShelter
+          ? 'UNASSIGNED'
           : fill >= 100
           ? 'FULL'
           : fill >= 90
@@ -287,9 +289,38 @@ export default function SafeZoneCapacityPage({
     });
   }, [relocationPlan, safeZonesList, capacityMap, autoRerouteEnabled, manualReroutes]);
 
-  const reroutedCount = useMemo(() => {
-    return activeEvacuations.filter((e) => e.isAutoRerouted || e.isManuallyRerouted).length;
+  const groupedEvacuations = useMemo(() => {
+    const groups = new Map();
+    activeEvacuations.forEach((allocation) => {
+      let group = groups.get(allocation.from);
+      if (!group) {
+        group = {
+          ...allocation,
+          allocations: [],
+          people: 0,
+          primaryFill: allocation.primaryFill,
+          isAutoRerouted: false,
+          isManuallyRerouted: false,
+        };
+        groups.set(allocation.from, group);
+      }
+
+      group.allocations.push(allocation);
+      group.people += Number(allocation.people) || 0;
+      if (allocation.primaryFill !== null && allocation.primaryFill !== undefined) {
+        group.primaryFill = group.primaryFill === null || group.primaryFill === undefined
+          ? allocation.primaryFill
+          : Math.max(group.primaryFill, allocation.primaryFill);
+      }
+      group.isAutoRerouted ||= allocation.isAutoRerouted;
+      group.isManuallyRerouted ||= allocation.isManuallyRerouted;
+    });
+    return [...groups.values()];
   }, [activeEvacuations]);
+
+  const reroutedCount = useMemo(() => {
+    return groupedEvacuations.filter((e) => e.isAutoRerouted || e.isManuallyRerouted).length;
+  }, [groupedEvacuations]);
 
   // Handler: Select an alternative safe zone from dropdown
   const handleSelectAlternative = (originZoneName, altHaven, originCoords, evacItem = null) => {
@@ -385,12 +416,12 @@ export default function SafeZoneCapacityPage({
 
           <div className="cap-kpi-card">
             <div className="cap-kpi-info">
-              <span className="cap-kpi-label">Current Occupancy</span>
+              <span className="cap-kpi-label">Current Shelter Occupancy</span>
               <strong className="cap-kpi-val text-blue">
                 {(summary.total_occupancy || 0).toLocaleString()}
               </strong>
               <span className="cap-kpi-hint">
-                {summary.overall_fill_percentage || 0}% national saturation
+                {summary.overall_fill_percentage || 0}% of capacity, including existing shelter occupants
               </span>
             </div>
           </div>
@@ -438,7 +469,7 @@ export default function SafeZoneCapacityPage({
           className={`sec-tab-btn ${activeSection === 'all' || activeSection === 'relocations' ? 'active' : ''}`}
           onClick={() => setActiveSection(activeSection === 'relocations' ? 'all' : 'relocations')}
         >
-          Autonomous Relocations & Rerouting Matrix ({activeEvacuations.length} Corridors)
+          Autonomous Relocations & Rerouting Matrix ({groupedEvacuations.length} Hazard Zones)
         </button>
         <button
           type="button"
@@ -476,25 +507,27 @@ export default function SafeZoneCapacityPage({
                   <th>Risk Level</th>
                   <th>Evacuees</th>
                   <th>Primary Safe Haven</th>
-                  <th>Primary Shelter Load</th>
+                  <th>Shelter Load by Allocation</th>
                   <th>Active Evacuation Route</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {activeEvacuations.length === 0 ? (
+                {groupedEvacuations.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center py-4">
                       Loading active evacuation corridors...
                     </td>
                   </tr>
                 ) : (
-                  activeEvacuations.map((evac, eIdx) => {
+                  groupedEvacuations.map((evac, eIdx) => {
                     const zoneFeat = geoData?.features?.find((f) => f.properties?.area_name === evac.from);
                     const activeRisk = (
-                      riskMode === 'baseline'
-                        ? (zoneFeat?.properties?.baseline_risk || evac.baseline_risk || evac.risk || 'medium')
-                        : (evac.risk || zoneFeat?.properties?.risk || 'medium')
+                      zoneFeat?.properties
+                        ? getEffectiveZoneRisk(zoneFeat.properties, riskMode)
+                        : (riskMode === 'baseline'
+                          ? (evac.baseline_risk || evac.risk || 'medium')
+                          : (evac.risk || 'medium'))
                     ).toLowerCase();
 
                     const isHigh = activeRisk === 'high';
@@ -519,44 +552,66 @@ export default function SafeZoneCapacityPage({
                           {(evac.people || 0).toLocaleString()}
                         </td>
                         <td>
-                          <span className="shelter-name-text">{evac.originalDest}</span>
-                        </td>
-                        <td>
-                          <div className="table-load-cell">
-                            <div className="table-load-track">
-                              <div
-                                className="table-load-fill"
-                                style={{
-                                  width: `${Math.min(100, evac.primaryFill)}%`,
-                                  backgroundColor:
-                                    evac.primaryFill >= 100
-                                      ? '#ef4444'
-                                      : evac.primaryFill >= 90
-                                      ? '#ff6b6b'
-                                      : evac.primaryFill >= 70
-                                      ? '#f59e0b'
-                                      : '#10b981',
-                                }}
-                              />
-                            </div>
-                            <span className="table-load-pct">{evac.primaryFill}%</span>
+                          <div className="allocation-destination-list">
+                            {evac.allocations.map((allocation, allocationIndex) => (
+                              <div className="matrix-allocation-row" key={`${allocation.to}-${allocationIndex}`}>
+                                <span className="matrix-shelter-name">{allocation.originalDest}</span>
+                                <strong className="matrix-allocation-people">
+                                  {(Number(allocation.people) || 0).toLocaleString()} people
+                                </strong>
+                              </div>
+                            ))}
                           </div>
                         </td>
                         <td>
-                          {evac.isAutoRerouted ? (
-                            <div className="reroute-destination-tag">
-                              <span className="reroute-badge">AUTONOMOUSLY REROUTED</span>
-                              <strong className="rerouted-name">To: {evac.effectiveDest}</strong>
-                              <span className="reroute-subtext">
-                                Headroom: {evac.reroutedHaven?.remaining_capacity?.toLocaleString()} beds ({evac.reroutedHaven?.fill_percentage}% load)
-                              </span>
-                            </div>
-                          ) : (
-                            <div className="direct-route-tag">
-                              <span className="direct-badge">DIRECT DISPATCH</span>
-                              <span className="direct-name">To: {evac.originalDest}</span>
-                            </div>
-                          )}
+                          <div className="allocation-load-list">
+                            {evac.allocations.map((allocation, allocationIndex) => {
+                              const shelterFill = allocation.primaryFill;
+                              if (shelterFill === null || shelterFill === undefined) {
+                                return (
+                                  <div className="allocation-load-row" key={`load-${allocationIndex}`}>
+                                    <span className="table-load-unavailable">No shelter assigned</span>
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <div className="allocation-load-row" key={`load-${allocationIndex}`}>
+                                  <div className="table-load-track">
+                                    <div
+                                      className="table-load-fill"
+                                      style={{
+                                        width: `${Math.min(100, shelterFill)}%`,
+                                        backgroundColor:
+                                          shelterFill >= 100
+                                            ? '#ef4444'
+                                            : shelterFill >= 90
+                                            ? '#ff6b6b'
+                                            : shelterFill >= 70
+                                            ? '#f59e0b'
+                                            : '#10b981',
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="table-load-pct">{shelterFill}%</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="allocation-destination-list">
+                            {evac.allocations.map((allocation, allocationIndex) => (
+                              <div className="matrix-allocation-row" key={`${allocation.effectiveDest}-${allocationIndex}`}>
+                                <span className={`matrix-shelter-name ${allocation.isAutoRerouted || allocation.isManuallyRerouted ? 'is-rerouted' : ''}`}>
+                                  {allocation.effectiveDest}
+                                </span>
+                                <strong className="matrix-allocation-people">
+                                  {(Number(allocation.people) || 0).toLocaleString()} people
+                                </strong>
+                              </div>
+                            ))}
+                          </div>
                         </td>
                         <td>
                           <div className="table-actions-cell" style={{ position: 'relative' }}>

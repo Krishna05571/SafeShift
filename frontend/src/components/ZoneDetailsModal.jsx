@@ -4,6 +4,8 @@ import {
   fetchLiveOpenMeteoWeather,
   getEffectiveZoneRisk,
   getEffectiveZonePriority,
+  calculateClientDynamicDemographics,
+  getActiveZonePopulation,
 } from '../utils/geoUtils';
 
 export default function ZoneDetailsModal({
@@ -89,6 +91,16 @@ export default function ZoneDetailsModal({
   const temp = liveWeather.temperature !== undefined ? Number(liveWeather.temperature) : (zone.temperature !== undefined ? Number(zone.temperature) : initialFallback.temperature);
   const weather = liveWeather.weather || zone.weather || initialFallback.weather;
   const weatherSource = liveWeather.source || (hasLiveProps ? 'Open-Meteo Live API' : 'IMD Telemetry Forecast');
+
+  // Dynamic Demographics & Tourist Telemetry
+  const calculatedDemographics = calculateClientDynamicDemographics(zone);
+  const demographics = zone.demographics || calculatedDemographics.demographics || {};
+  const totalPop = getActiveZonePopulation({ ...zone, demographics }, calculatedDemographics.population) ?? 7500;
+  const basePop = demographics.base_resident_population ?? Math.max(0, totalPop - (demographics.current_floating_tourists ?? 0));
+  const touristsPop = demographics.current_floating_tourists ?? Math.max(0, totalPop - basePop);
+  const surgeFactor = demographics.tourist_surge_factor ?? (basePop > 0 ? (totalPop / basePop).toFixed(2) : 1.0);
+  const seasonStatus = demographics.season_status || 'Standard Influx';
+  const osmHotels = demographics.live_osm_accommodations_count || demographics.hotels_count || 0;
 
   // Dynamic Risk & Priority Evaluation:
   // Synchronized 1:1 with Map polygon colors and Dashboard stats
@@ -193,20 +205,20 @@ export default function ZoneDetailsModal({
           </div>
         )}
 
-        {zone.population !== undefined && (
+        {!isSafe && (
           <div className="detail-stat-row">
-            <span className="detail-label">Estimated Population</span>
-            <span className="detail-value font-mono">
-              {zone.population.toLocaleString()} residents
+            <span className="detail-label">Total Population at Risk</span>
+            <span className="detail-value font-mono" style={{ fontWeight: '700', color: '#b91c1c' }}>
+              {totalPop.toLocaleString()} people
             </span>
           </div>
         )}
 
-        {zone.capacity !== undefined && (
+        {isSafe && zone.capacity !== undefined && (
           <div className="detail-stat-row">
-            <span className="detail-label">Safe Shelter Capacity</span>
-            <span className="detail-value font-mono text-green">
-              {zone.capacity.toLocaleString()} beds / people
+            <span className="detail-label">Total Shelter Capacity</span>
+            <span className="detail-value font-mono text-green" style={{ fontWeight: '700' }}>
+              {zone.capacity.toLocaleString()} beds (Sphere standard)
             </span>
           </div>
         )}
@@ -214,8 +226,8 @@ export default function ZoneDetailsModal({
         {zone.hazard_type && (
           <div className="detail-stat-row">
             <span className="detail-label">Primary Hazard Type</span>
-            <span className="detail-value text-capitalize">
-              {zone.hazard_type}
+            <span className="detail-value highlight-priority" style={{ color: '#0f172a' }}>
+              {zone.hazard_type.toUpperCase()}
             </span>
           </div>
         )}
@@ -269,6 +281,54 @@ export default function ZoneDetailsModal({
                   : rainfall >= 35.5 && zone.hazard_type === 'landslide'
                   ? 'Antecedent slope moisture (>=35.5mm) triggering Medium Alert'
                   : 'Precipitation within baseline safe range; low risk / monitoring'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Dynamic Demographics & Live Tourist Telemetry Card */}
+        {!isSafe && (
+          <div className="panel-weather-card" style={{ marginTop: '12px' }}>
+            <div className="weather-card-header">
+              <div className="weather-card-title">
+                <span>Dynamic Demographics & Floating Influx</span>
+              </div>
+              <span className="weather-live-tag" style={{ background: '#e0e7ff', color: '#4338ca' }}>
+                {demographics.telemetry_source ? 'OSM + NASA Grids' : 'Live Spatial Telemetry'}
+              </span>
+            </div>
+
+            <div className="weather-grid">
+              <div className="weather-stat-box">
+                <span className="weather-stat-label">Permanent Residents</span>
+                <strong className="weather-stat-val font-mono" style={{ color: '#0f172a' }}>
+                  {basePop.toLocaleString()}
+                </strong>
+              </div>
+              <div className="weather-stat-box">
+                <span className="weather-stat-label">Floating Influx / Tourists</span>
+                <strong className="weather-stat-val font-mono" style={{ color: '#d97706' }}>
+                  +{touristsPop.toLocaleString()}
+                </strong>
+              </div>
+              <div className="weather-stat-box">
+                <span className="weather-stat-label">OSM Lodgings Detected</span>
+                <strong className="weather-stat-val text-temp">
+                  {osmHotels > 0 ? `${osmHotels} mapped` : 'Active sector'}
+                </strong>
+              </div>
+              <div className="weather-stat-box">
+                <span className="weather-stat-label">Total At-Risk</span>
+                <strong className="weather-stat-val font-mono" style={{ color: '#b91c1c' }}>
+                  {totalPop.toLocaleString()}
+                </strong>
+              </div>
+            </div>
+
+            <div className="weather-impact-alert" style={{ background: '#fef3c7', borderColor: '#fde68a' }}>
+              <span className="impact-dot" style={{ background: '#d97706' }} />
+              <span style={{ color: '#92400e' }}>
+                <strong>{seasonStatus}</strong>: Floating influx multiplier of <strong>{surgeFactor}x</strong> active above baseline census.
               </span>
             </div>
           </div>

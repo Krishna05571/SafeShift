@@ -1,4 +1,4 @@
-import { getEffectiveZoneRisk, getEffectiveZonePriority } from './geoUtils';
+import { getActiveZonePopulation, getEffectiveZoneRisk, getEffectiveZonePriority } from './geoUtils';
 
 // Risk and Safe Zone color definitions
 export const RISK_COLORS = {
@@ -121,7 +121,9 @@ export const createPopupContent = (properties = {}, riskMode = 'baseline') => {
   const isSafe = properties.safe === true || properties.location_type === 'relocation_site';
   const areaName = properties.area_name || 'Unnamed Zone';
   const hazardType = properties.hazard_type || (isSafe ? 'Designated Safe Haven' : 'General Hazard');
-  const population = properties.population !== undefined ? properties.population.toLocaleString() : null;
+  const rawPop = getActiveZonePopulation(properties);
+  const population = rawPop !== undefined && rawPop !== null ? Number(rawPop).toLocaleString() : null;
+
   const capacity = properties.capacity !== undefined ? properties.capacity.toLocaleString() : null;
 
   // Active risk & priority based on riskMode
@@ -177,10 +179,13 @@ export const createPopupContent = (properties = {}, riskMode = 'baseline') => {
         </div>
 
         ${
-          population !== null
+          population !== null && !isSafe
             ? `<div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <strong style="color: #64748b;">Population Affected:</strong>
-                <span style="font-weight: 700; color: #b91c1c;">${population}</span>
+                <strong style="color: #64748b;">Active Population at Risk:</strong>
+                <span style="font-weight: 700; color: #b91c1c;">
+                  ${population}
+                  ${properties.demographics?.current_floating_tourists ? ` <small style="font-weight: 600; color: #d97706;">(+${Number(properties.demographics.current_floating_tourists).toLocaleString()} floating)</small>` : ''}
+                </span>
               </div>`
             : ''
         }
@@ -188,7 +193,7 @@ export const createPopupContent = (properties = {}, riskMode = 'baseline') => {
         ${
           capacity !== null
             ? `<div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                <strong style="color: #64748b;">Total Capacity:</strong>
+                <strong style="color: #64748b;">Relief Capacity (Sphere):</strong>
                 <span style="font-weight: 700; color: #047857;">${capacity.toLocaleString()} beds</span>
               </div>`
             : ''

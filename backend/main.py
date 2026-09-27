@@ -1,5 +1,6 @@
 import sys
 import json
+import copy
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -94,10 +95,19 @@ def home():
         ]
     }
 
+from population_service import get_dynamic_zone_population, enrich_feature_collection_with_population
+
 @app.get("/zones")
 def get_zones():
-    """Returns the multi-hazard GeoJSON FeatureCollection (baseline)."""
-    return geo_data
+    """Returns the multi-hazard GeoJSON FeatureCollection with live dynamic demographics."""
+    enriched_features = enrich_feature_collection_with_population(geo_data.get("features", []))
+    return {
+        "type": "FeatureCollection",
+        "features": enriched_features,
+        "metadata": {
+            "dynamic_demographics": True
+        }
+    }
 
 @app.get("/zones/live")
 def get_zones_live(refresh: bool = Query(default=False, description="Force refresh weather cache")):
@@ -106,7 +116,10 @@ def get_zones_live(refresh: bool = Query(default=False, description="Force refre
     and dynamically predicted disaster risk levels (Floods & Landslides).
     """
     live_geo_data, _ = get_live_zones_with_weather(geo_data, force_refresh=refresh)
+    # Sync safezone_manager so shelter/analytics views see live Sphere-standard capacity
+    safezone_manager.sync_capacities_from_live_geo(live_geo_data)
     return live_geo_data
+
 
 @app.get("/weather-impact")
 def get_weather_impact(refresh: bool = Query(default=False, description="Force refresh weather cache")):
@@ -135,9 +148,18 @@ def get_relocation_plan(live: bool = Query(default=True, description="Compute re
     - Computes distance_km, travel_time_min, origin_coords, and dest_coords
     - Allocates people and splits across safe zones if capacity is exceeded
     """
-    active_geo = geo_data
-    if live:
-        active_geo, _ = get_live_zones_with_weather(geo_data, force_refresh=False)
+    live_geo, _ = get_live_zones_with_weather(geo_data, force_refresh=False)
+    active_geo = live_geo
+    if not live:
+        active_geo = copy.deepcopy(live_geo)
+        baseline_features = geo_data.get("features", [])
+        for idx, feature in enumerate(active_geo.get("features", [])):
+            properties = feature.get("properties", {})
+            baseline_properties = baseline_features[idx].get("properties", {}) if idx < len(baseline_features) else {}
+            if properties.get("safe") is True or properties.get("location_type") == "relocation_site":
+                continue
+            properties["risk"] = baseline_properties.get("risk", properties.get("baseline_risk", "low"))
+            properties["priority"] = baseline_properties.get("priority", properties.get("priority", "short-term"))
     return generate_relocation_plan(active_geo)
 
 @app.get("/route-geometry")
@@ -219,9 +241,13 @@ def get_safezones_status(auto_tick: bool = Query(default=True, description="Auto
     Returns real-time capacity, current occupancy, remaining capacity, fill percentages,
     predictive fill ETA (minutes to 100%), and active stacked threshold alerts.
     """
+    # Ensure capacity reflects live Sphere-standard footprint before returning
+    live_geo_data, _ = get_live_zones_with_weather(geo_data, force_refresh=False)
+    safezone_manager.sync_capacities_from_live_geo(live_geo_data)
     if auto_tick:
         return safezone_manager.simulate_tick()
     return safezone_manager.get_status_summary()
+
 
 @app.post("/safezones/update")
 def post_safezones_update(body: Optional[CapacityUpdateRequest] = Body(default=None)):

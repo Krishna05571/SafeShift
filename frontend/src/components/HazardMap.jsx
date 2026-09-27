@@ -12,7 +12,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Navigation, X, ArrowRight, Layers, MapPin } from 'lucide-react';
 import { getZoneStyle, getHighlightStyle, createPopupContent } from '../utils/styles';
-import { getEffectiveZoneRisk } from '../utils/geoUtils';
+import { getActiveZonePopulation, getEffectiveZoneRisk } from '../utils/geoUtils';
 import Legend from './Legend';
 
 // Fix default Leaflet marker icon paths
@@ -249,17 +249,24 @@ export default function HazardMap({
   // Multi-Select Relocation Routes Filter
   const filteredRoutes = React.useMemo(() => {
     if (!relocationPlan || relocationPlan.length === 0) return [];
-    if (filters.includes('all')) return relocationPlan;
+    const modeRoutes = relocationPlan.map((route) => {
+      const zone = geoData?.features?.find((feature) => feature.properties?.area_name === route.from);
+      return {
+        ...route,
+        risk: zone?.properties ? getEffectiveZoneRisk(zone.properties, riskMode) : route.risk,
+      };
+    });
+    if (filters.includes('all')) return modeRoutes;
 
     const riskFilters = filters.filter((f) => ['high', 'medium', 'low'].includes(f));
     const hazardFilters = filters.filter((f) => ['flood', 'landslide'].includes(f));
 
     // If only safe zone filter is active, show all corresponding routes
     if (filters.includes('safe') && riskFilters.length === 0 && hazardFilters.length === 0) {
-      return relocationPlan;
+      return modeRoutes;
     }
 
-    return relocationPlan.filter((r) => {
+    return modeRoutes.filter((r) => {
       const risk = (r.risk || '').toLowerCase();
       const hazard = (r.hazard_type || '').toLowerCase();
 
@@ -268,7 +275,17 @@ export default function HazardMap({
 
       return matchesRisk && matchesHazard;
     });
-  }, [relocationPlan, filters]);
+  }, [relocationPlan, geoData, filters, riskMode]);
+
+  const visibleCorridors = React.useMemo(() => {
+    const firstRouteByOrigin = new Map();
+    filteredRoutes.forEach((route) => {
+      if (!firstRouteByOrigin.has(route.from)) {
+        firstRouteByOrigin.set(route.from, route);
+      }
+    });
+    return [...firstRouteByOrigin.values()];
+  }, [filteredRoutes]);
 
   // Handle polygon hover, mouseout, and click behaviors
   const onEachFeature = (feature, layer) => {
@@ -293,7 +310,7 @@ export default function HazardMap({
 
     const tooltipText = props.safe
       ? `${props.area_name} (${props.fill_percentage !== undefined ? `${props.fill_percentage}% Occupied` : `Cap: ${props.capacity?.toLocaleString() || 'N/A'}`})`
-      : `${props.area_name} (${currentRisk} RISK | Rain: ${props.rainfall ?? 0}mm | Pop: ${(props.population || 0).toLocaleString()})`;
+      : `${props.area_name} (${currentRisk} RISK | Rain: ${props.rainfall ?? 0}mm | Pop: ${getActiveZonePopulation(props, 0).toLocaleString()})`;
     layer.bindTooltip(tooltipText, {
       sticky: true,
       direction: 'top',
@@ -354,7 +371,7 @@ export default function HazardMap({
         {/* Tier 1: Macro Evacuation Corridors (Straight Lines) */}
         {showCorridors &&
           !activeDetailedRoute &&
-          filteredRoutes.map((route, idx) => {
+          visibleCorridors.map((route, idx) => {
             if (!route.origin_coords || !route.dest_coords) return null;
 
             const isSpillover = route.spillover_active === true;

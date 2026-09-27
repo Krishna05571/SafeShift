@@ -24,6 +24,7 @@ import {
   getHighwayRouteGeometry,
   fetchLiveOsrmHighway,
   getEffectiveZoneRisk,
+  getActiveZonePopulation,
   fetchLiveOpenMeteoWeather,
 } from './utils/geoUtils';
 import './App.css';
@@ -68,12 +69,44 @@ function App() {
   const routeGeometryCacheRef = useRef({});
   const isFetchingCapacityRef = useRef(false);
 
+  useEffect(() => {
+    const selectedName = selectedZone?.area_name;
+    if (!selectedName || !geoData?.features) return;
+
+    const currentFeature = geoData.features.find((feature) => feature.properties?.area_name === selectedName);
+    if (currentFeature?.properties) {
+      setSelectedZone((current) => current?.area_name === selectedName
+        ? { ...currentFeature.properties, geometry: currentFeature.geometry }
+        : current);
+    }
+  }, [geoData, selectedZone?.area_name]);
+
+  const resolveZoneDetails = (zoneProps) => {
+    if (!zoneProps) return null;
+    const feature = geoData?.features?.find(
+      (item) => item.properties?.area_name === zoneProps.area_name
+    );
+    return feature?.properties
+      ? { ...zoneProps, ...feature.properties, geometry: feature.geometry }
+      : zoneProps;
+  };
+
+  const handleSelectZone = (zoneProps) => {
+    setSelectedZone(resolveZoneDetails(zoneProps));
+  };
+
+  const handleRiskModeChange = (mode) => {
+    setRiskMode(mode);
+    setRelocationPlan(generateClientRelocationPlan(geoData, mode));
+  };
+
   // Explicit Zone Location Action (Zooms on map when Locate on Map / Inspect Zone is clicked)
   const handleLocateZone = (zoneProps) => {
     if (!zoneProps) return;
-    setSelectedZone(zoneProps);
+    const resolvedZone = resolveZoneDetails(zoneProps);
+    setSelectedZone(resolvedZone);
     setLocateTarget({
-      zone: zoneProps,
+      zone: resolvedZone,
       timestamp: Date.now(),
     });
     if (activeTab === 'dashboard' || activeTab === 'capacity') {
@@ -598,9 +631,23 @@ function App() {
         if (hazardType.includes('landslide')) landslides += 1;
         if (hazardType.includes('flood')) floods += 1;
 
-        population += Number(props.population) || 0;
+        // Use full dynamic population (permanent + floating influx) when available
+        population += getActiveZonePopulation(props, 0);
       }
     });
+
+    const planPopulation = relocationPlan.reduce(
+      (sum, item) => sum + (Number(item.people) || 0),
+      0
+    );
+    if (relocationPlan.length > 0) {
+      population = planPopulation;
+    }
+
+    const liveCapacity = Number(safeZoneStatus?.summary?.total_capacity);
+    if (Number.isFinite(liveCapacity) && liveCapacity > 0) {
+      capacity = liveCapacity;
+    }
 
     return {
       totalZones: features.length,
@@ -613,7 +660,7 @@ function App() {
       totalPopulation: population,
       totalCapacity: capacity,
     };
-  }, [geoData, riskMode]);
+  }, [geoData, relocationPlan, riskMode, safeZoneStatus]);
 
   // 1. Render Flagship Landing Page
   if (appMode === 'landing') {
@@ -751,8 +798,10 @@ function App() {
             <DashboardPanel
               geoData={geoData}
               relocationPlan={relocationPlan}
+              stats={stats}
               theme={theme}
               riskMode={riskMode}
+              safeZoneStatus={safeZoneStatus}
               onTraceRoute={handleTraceRoute}
               onLocateZone={handleLocateZone}
             />
@@ -791,7 +840,7 @@ function App() {
               onRefreshWeather={fetchAllData}
               isRefreshingWeather={isRefreshingWeather}
               riskMode={riskMode}
-              onToggleRiskMode={setRiskMode}
+              onToggleRiskMode={handleRiskModeChange}
             />
             <div className="map-view-container">
               <HazardMap
@@ -799,7 +848,7 @@ function App() {
                 relocationPlan={relocationPlan}
                 stats={stats}
                 selectedFilters={selectedFilters}
-                onSelectZone={(zone) => setSelectedZone(zone)}
+                onSelectZone={handleSelectZone}
                 theme={theme}
                 activeDetailedRoute={activeDetailedRoute}
                 onClearDetailedRoute={handleClearDetailedRoute}
@@ -843,7 +892,7 @@ function App() {
                 onRefreshWeather={fetchAllData}
                 isRefreshingWeather={isRefreshingWeather}
                 riskMode={riskMode}
-                onToggleRiskMode={setRiskMode}
+                  onToggleRiskMode={handleRiskModeChange}
               />
               <div className="map-view-container">
                 <HazardMap
@@ -851,7 +900,7 @@ function App() {
                   relocationPlan={relocationPlan}
                   stats={stats}
                   selectedFilters={selectedFilters}
-                  onSelectZone={(zone) => setSelectedZone(zone)}
+                  onSelectZone={handleSelectZone}
                   theme={theme}
                   activeDetailedRoute={activeDetailedRoute}
                   onClearDetailedRoute={handleClearDetailedRoute}
@@ -885,6 +934,7 @@ function App() {
               <DashboardPanel
                 geoData={geoData}
                 relocationPlan={relocationPlan}
+                stats={stats}
                 theme={theme}
                 riskMode={riskMode}
                 safeZoneStatus={safeZoneStatus}
@@ -925,7 +975,7 @@ function App() {
         isOpen={showAIBriefingModal}
         onClose={() => setShowAIBriefingModal(false)}
         riskMode={riskMode}
-        onToggleRiskMode={setRiskMode}
+        onToggleRiskMode={handleRiskModeChange}
         relocationPlan={relocationPlan}
         onLocateZone={handleLocateZone}
         theme={theme}
